@@ -1,0 +1,8 @@
+Program either just strips adapter off ends of reads, or does that and finds probable adjacent reads with unambigous alignments.
+
+Uses presence of adapter to infer insert size < read length, so read overlapping is forced in that case.
+
+If adapter is present, start at the adapter position, and calculate the best alignment within some range of that position, say 5 bases.
+
+
+
