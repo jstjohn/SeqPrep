@@ -194,7 +194,11 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
 
 */
 
-int compute_ol(char subjectSeq[], char subjectQual[]; size_t subjectLen; char querySeq[]; char queryQual[]; size_t queryLen; size_t min_olap, size_t max_miss, int check_unique, char adj_q_cut) {
+int compute_ol(
+     char subjectSeq[], char subjectQual[]; size_t subjectLen; 
+     char querySeq[]; char queryQual[]; size_t queryLen; 
+     size_t min_olap, size_t min_match, size_t max_miss, 
+     bool check_unique, char adj_q_cut) {
   
   size_t  pos;  
   /* Try each possible starting position 
@@ -205,7 +209,7 @@ int compute_ol(char subjectSeq[], char subjectQual[]; size_t subjectLen; char qu
 	       &(subjectQual[pos]),
 	       subjectLen,
                querySeq, queryQual,
-               queryLen 
+               queryLen, min_match 
                max_miss, adj_q_cut ) ) {
       if(check_unique && best_hit != CODE_NOMATCH){
         return CODE_AMBIGUOUS;
@@ -236,19 +240,26 @@ int compute_ol(char subjectSeq[], char subjectQual[]; size_t subjectLen; char qu
 */
 bool k_match( const char* s1, const char* q1, size_t len1, 
 	const char* s2, const char* q2, size_t len2, 
-	size_t maxmiss, char adj_q_cut ) {
+	size_t minmatch, size_t maxmiss, char adj_q_cut ) {
   size_t i;
   size_t mismatch = 0;
+  size_t match = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
     if ( (q1[i] >= adj_q_cut) &&
-	 (q2[i] >= adj_q_cut) &&
-	 (s1[i] != s2[i]) ) {
-      mismatch++;
-      if(mismatch >=max_miss)
-        return false;
+	 (q2[i] >= adj_q_cut){
+      if (s1[i] != s2[i]) ) {
+        mismatch++;
+        if(mismatch >=max_miss)
+          return false;
+      }else{
+        match++;
+      }
     }
   }
-  return true;
+  if (match >= minmatch)
+    return true;
+  else
+    return false;
 }
 
 
