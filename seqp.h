@@ -5,7 +5,7 @@
 #include <zlib.h>
 
 #define MAX_ID_LEN (256)
-#define SEQ_LEN (64)
+#define SEQ_LEN (256)
 #define MAX_KMER_OCCUR (128)
 #define QCUT (20) // Quality score cutoff for mismatching bases to determine if there is overlap in forward and reverse reads
 #define MAX_ALLOW_FOR_REV_OL (4) // Maximum number of base-pairs allowed to overlap to be used in making scontigs
@@ -13,46 +13,20 @@
 /* Type to hold the forward and reverse read
    of a sequence pair with quality scores */
 typedef struct sqp {
+  char fid[MAX_ID_LEN+1];
   char fseq[SEQ_LEN+1];
   char fqual[SEQ_LEN+1];
+  size_t flen;
+  char rid[MAX_ID_LEN+1];
   char rseq[SEQ_LEN+1];
   char rqual[SEQ_LEN+1];
-  int qual_sum;
-  int num_skf; // number of sweep-spot kmers on forward
-  int num_skr; // number of sweep-spot kmers on reverse
+  size_t rlen;
+  int insert_len; // use 
   int for_rev_ol; // number of bases that (might) overlap in the
                   // forward and reverse reads
 } Sqp;
 typedef struct sqp* SQP;
 
-/* Type to hold an array of sqp, i.e, a database
-   of sequences pairs and their quality scores */
-typedef struct sqpdb {
-  SQP* sqps; // pointer to array of seq & qual pairs
-  unsigned int seq_len; // the length of the sequences
-  size_t num_reads; // The current length of the database, 0-indexed
-  size_t size; // The currently allocated size of the database
-} Sqpdb;
-typedef struct sqpdb* SQPDB;
-
-/* Type to hold an array of kmers. The array index
-   specifies what the kmer is using this scheme:
-   A=>00, C=>01, G=>10, T=>11
-   A bit string is this composed, from 5' to 3' of
-   the kmer. The bitstring is interpreted as a size_t
-   to index the array
-   Example: ACTCG => 0001110110b => 118d
-*/
-typedef struct kmer_occur {
-  int occur[MAX_KMER_OCCUR];
-  size_t num_occur;
-} Kmer_occur;
-typedef struct kmer_occur* KOP;
-typedef struct kmers {
-  int k; // length of kmers
-  KOP* ka; // pointer to size_t; the kmer array
-} Kmers;
-typedef struct kmers* KSP;
 
 typedef struct overlappers {
   size_t n; // number of overlappers
