@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "seqp.h"
+#include <stdbool.h>
+#include "utils.h"
 
 SQP SQP_init(){
   //allocate an SQP
@@ -20,43 +21,46 @@ void SQP_destroy(SQP sqp){
    put the results in the next SQP of SQPDB. Grow
    this, if necessary.
 */
-inline int next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp ) {
+inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp ) {
   int frs; // forward fastq read status
   int rrs; // reverse fastq read status
- 
+  int id1len = 0;
+  int id2len = 0;
   /* Read the next fastq record from the forward and reverse
      pair of each */
-  frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, curr_sqp->fqual );
-  rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, curr_sqp->rqual );
+  frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, 
+                    curr_sqp->fqual, &id1len, &(curr_sqp->flen) );
+  rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, 
+                    curr_sqp->rqual, &id2len, &(curr_sqp->rlen) );
 
   if ( (frs == 1) &&
        (rrs == 1) &&
-       f_r_id_check( fid, rid ) ) {
-    return 1;
+       f_r_id_check( fid, id1len, rid, id2len ) ) {
+    return true;
   }
 
   else {
-    return 0;
+    return false;
   }
 }
 
-inline int f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
+inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
-    return 0; //trivial case
+    return false; //trivial case
   }
 
   //expect last two characters are not equal
   if (strcmpi( fid, rid, fid_len - 2) == 0 ) {
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
 /* read_fastq
    Return 1 => more sequence to be had
           0 => EOF
  */
-int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len ) {
+int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len, int p64 ) {
   char c;
   size_t i;
   c = gzgetc( fastq );
@@ -94,7 +98,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   c = gzgetc( fastq );
   while ( (c != '\n') &&
 	  (c != EOF) &&
-	  (i < SEQ_LEN) ) {
+	  (i < MAX_SEQ_LEN) ) {
     if ( isspace(c) ) {
       ;
     }
@@ -109,7 +113,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   /* If the reading stopped because the sequence was longer than
      INIT_ALN_SEQ_LEN, then we need to advance the file pointer
      past this line */
-  if ( i == SEQ_LEN ) {
+  if ( i == MAX_SEQ_LEN ) {
     while ( (c != '\n') &&
 	    (c != EOF) ) {
       c = gzgetc( fastq );
@@ -135,12 +139,12 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   i = 0;
   while( (c != '\n') &&
 	 (c != EOF) &&
-	 (i < SEQ_LEN) ) {
+	 (i < MAX_SEQ_LEN) ) {
     if ( isspace(c) ) {
       ;
     }
     else {
-      qual[i++] = c;
+      qual[i++] = (p64)?((c=='B')?'!':c-31):c;
     }
     c = gzgetc( fastq );
   }
@@ -149,7 +153,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   /* If the reading stopped because the sequence was longer than
      INIT_ALN_SEQ_LEN, then we need to advance the file pointer
      past this line */
-  if ( i == SEQ_LEN ) {
+  if ( i == MAX_SEQ_LEN ) {
     while ( (c != '\n') &&
 	    (c != EOF) ) {
       c = gzgetc( fastq );
@@ -175,119 +179,76 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
   return f;
 }
 
-/* Takes two SQP, a cutoff for base quality score,
-   a shortcut number of mismatches beyond which we don't care
-   anymore and pointers to the number of matches and mismatches to
-   be calculated by comparing these two sequences.
-   The forward and reverse fragments are compared. Just considers
-   out to the end of the shorter of any two sequences being
-   compared.
-*/
-void comp_seq( const SQP s1, const SQP s2, const int qcut, 
-	       const int mmc, int* match, int* mismatch ) {
-  size_t len1, len2, i;
-  *match = 0;
-  *mismatch = 0;
-
-  len1 = strlen( s1->fseq );
-  len2 = strlen( s2->fseq );
-
-  for ( i = 0; ((i < len1) && (i < len2)); i++ ) {
-    if ( (s1->fqual[i] >= qcut) &&
-	 (s2->fqual[i] >= qcut) ) {
-      if ( s1->fseq[i] == s2->fseq[i] ) {
-	(*match)++;
-      }
-      else {
-	(*mismatch)++;
-	if ( *mismatch > mmc ) {
-	  return;
-	}
-      }
-    }
-  }
-
-  len1 = strlen( s1->rseq );
-  len2 = strlen( s2->rseq );
-  for ( i = 0; ((i < len1) && (i < len2)); i++ ) {
-    if ( (s1->rqual[i] >= qcut) &&
-	 (s2->rqual[i] >= qcut) ) {
-      if ( s1->rseq[i] == s2->rseq[i] ) {
-	(*match)++;
-      }
-      else {
-	(*mismatch)++;
-	if ( *mismatch > mmc ) {
-	  return;
-	}
-      }
-    }
-  }
-}
-
 
 /* 
-   FOR: ACGTGCATGCTAGACT
-   REV: CGATGCTAGTCTAGCA
-
-   then REVCOM(REV): TGCTAGACTAGCATCG
-                     |||||||||
-         FOR: ACGTGCATGCTAGACT
+   Supply two sequences in the proper orientation for overlap
+   Ie in this example give compute_ol the reversed sequence and quality
+   
+   
+   then QUERY:       TGCTAGACTAGCATCG
+                     | |||-|||
+     SUBJECT: ACGTGCATCCTANACT
 
    Therefore, the overlap would be 9. Ignore any
-   base that has Quality score less than QCUT
+   base that has Quality score less than adj_q_cut
 
 */
-void compute_ol(const SQP sqp) {
-  size_t i, len1, len2, pos;
-  char rc_rev[ SEQ_LEN + 1 ];
-  char r_rev_q[ SEQ_LEN + 1 ];
-  for( i = 0; i < sqpdb->num_reads; i++ ) {
-    len1 = strlen( sqpdb->sqps[i]->fseq );
-    len2 = strlen( sqpdb->sqps[i]->rseq );
-    strcpy( rc_rev, sqpdb->sqps[i]->rseq );
-    strcpy( r_rev_q, sqpdb->sqps[i]->rqual );
-    revcom_seq( rc_rev );
-    rev_qual( r_rev_q );
-    sqpdb->sqps[i]->for_rev_ol = 0;
-    /* Try each possible starting position 
-       on the forward sequence */
-    for( pos = 0; pos < len1; pos++ ) {
-      if ( perf_match( &(sqpdb->sqps[i]->fseq[pos]),
-		       &(sqpdb->sqps[i]->fqual[pos]),
-		       rc_rev, r_rev_q ) ) {
-	sqpdb->sqps[i]->for_rev_ol = (len1 - pos);
-	break;
+
+int compute_ol(char subjectSeq[], char subjectQual[]; size_t subjectLen; char querySeq[]; char queryQual[]; size_t queryLen; size_t min_olap, size_t max_miss, int check_unique, char adj_q_cut) {
+  
+  size_t  pos;  
+  /* Try each possible starting position 
+     on the forward sequence */
+  int best_hit = CODE_NOMATCH;
+  for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
+    if ( k_match( &(subjectSeq[pos]),
+	       &(subjectQual[pos]),
+	       subjectLen,
+               querySeq, queryQual,
+               queryLen 
+               max_miss, adj_q_cut ) ) {
+      if(check_unique && best_hit != CODE_NOMATCH){
+        return CODE_AMBIGUOUS;
+      }
+      if(best_hit == CODE_NOMATCH){
+        if(!check_unique)
+          return pos;
+	best_hit = pos;
       }
     }
   }
-  return;
+  return best_hit;
 }
 
-/* perf_match
+/* k_match
    Args: pointer to forward seq,
-         pointer to forward qual scores
+         pointer to forward qual scores,
+	 length of the forward seq
 	 pointer to rev seq,
 	 pointer to rev qual scores
+         length of the reverse seq
    This is the comparison function for finding the overlap
    between the forward and reverse reads. It's called at 
    all possible overlapping positions, from longest to
    shortest, until it finds one. It doesn't require a match
    if either read has quality score less that QCUT.
-   Returns: 1 if it's a match, 0 if it's not
+   Returns: true if it's a match, false if it's not
 */
-int perf_match( const char* s1, const char* q1, size_t len1, 
-		const char* s2, const char* q2, size_t len2 ) {
-  size_t i, adj_q_cut;
-  adj_q_cut = 33 + QCUT;
+bool k_match( const char* s1, const char* q1, size_t len1, 
+	const char* s2, const char* q2, size_t len2, 
+	size_t maxmiss, char adj_q_cut ) {
+  size_t i;
+  size_t mismatch = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
     if ( (q1[i] >= adj_q_cut) &&
 	 (q2[i] >= adj_q_cut) &&
 	 (s1[i] != s2[i]) ) {
-      return 0;
+      mismatch++;
+      if(mismatch >=max_miss)
+        return false;
     }
   }
-  return 1;
+  return true;
 }
 
 

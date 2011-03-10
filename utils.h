@@ -2,28 +2,28 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 #include <zlib.h>
 
 #define MAX_ID_LEN (256)
-#define SEQ_LEN (256)
-#define MAX_KMER_OCCUR (128)
-#define QCUT (20) // Quality score cutoff for mismatching bases to determine if there is overlap in forward and reverse reads
-#define MAX_ALLOW_FOR_REV_OL (4) // Maximum number of base-pairs allowed to overlap to be used in making scontigs
+#define MAX_SEQ_LEN (256)
+#define CODE_AMBIGUOUS (-2)
+#define CODE_NOMATCH (-1)
 
 /* Type to hold the forward and reverse read
    of a sequence pair with quality scores */
 typedef struct sqp {
   char fid[MAX_ID_LEN+1];
-  char fseq[SEQ_LEN+1];
-  char fqual[SEQ_LEN+1];
+  char fseq[MAX_SEQ_LEN+1];
+  char fqual[MAX_SEQ_LEN+1];
   size_t flen;
   char rid[MAX_ID_LEN+1];
-  char rseq[SEQ_LEN+1];
-  char rqual[SEQ_LEN+1];
+  char rseq[MAX_SEQ_LEN+1];
+  char rqual[MAX_SEQ_LEN+1];
   size_t rlen;
-  int insert_len; // use 
-  int for_rev_ol; // number of bases that (might) overlap in the
-                  // forward and reverse reads
+  size_t insert_len; // only valid if guessing that primer is present in seq
+  size_t for_rev_ol; // number of bases that (might) overlap in the
+                     // forward and reverse reads, unless insert_len
 } Sqp;
 typedef struct sqp* SQP;
 
