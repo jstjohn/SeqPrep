@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -Wall -Werror -O3 -ffast_math -march=native
+CFLAGS=-c -Wall -Werror -O3 -ffast-math
 COPTS=
 LDFLAGS=-lz -lm
 SOURCES=seqPrep.c utils.c

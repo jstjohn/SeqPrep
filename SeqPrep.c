@@ -15,6 +15,10 @@
 #define DEF_MIN_INFERRED_INS_LEN_TO_PRINT (30)
 #define DEF_MAX_MISMATCH_ADAPTER (0.1)
 #define DEF_MAX_MISMATCH_READS (0.1)
+//following primer sequences are from:
+//http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
+//and I validated both with grep, the first gets hits to the forward file only and the second
+//gets hits to the reverse file only.
 #define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCG")
 #define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
 void help ( char *prog_name ) {
@@ -35,7 +39,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-M <maximum fraction of good quality, mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
   fprintf(stderr, "\t-N <minimum fraction of good quality, matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
-  fprintf(stderr, "\t-m <perform merging and output the merged reads to this file>\n" );
+  fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
   fprintf(stderr, "\t-o <minimum overall base pair overlap to merge two reads; default = %d>\n", DEF_OL2MERGE_READS );
   fprintf(stderr, "\t-m <minimum fraction of good quality, matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
   fprintf(stderr, "\t-n <maximum fraction of good quality, mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
@@ -52,18 +56,28 @@ int main( int argc, char* argv[] ) {
   char forward_out_fn[MAX_FN_LEN];
   char reverse_out_fn[MAX_FN_LEN];
   char merged_out_fn[MAX_FN_LEN];
+  bool do_read_merging = false;
   char forward_primer[MAX_SEQ_LEN+1];
+  strcpy(forward_primer, DEF_FORWARD_PRIMER); //set default
+  char forward_primer_dummy_qual[MAX_SEQ_LEN+1];
   char reverse_primer[MAX_SEQ_LEN+1];
+  strcpy(reverse_primer, DEF_REVERSE_PRIMER); //set default
+  char reverse_primer_dummy_qual[MAX_SEQ_LEN+1];
   int ich;
-  int ol_req = DEF_OL2MERGE;
-  char qcut   = DEF_QCUT+33;
+  int min_ol_adapter = DEF_OL2MERGE_ADAPTER;
+  int min_ol_reads = DEF_OL2MERGE_READS;
+  float min_match_adapter_frac = DEF_MIN_MATCH_ADAPTER;
+  float min_match_reads_frac = DEF_MIN_MATCH_READS;
+  float max_mismatch_adapter_frac = DEF_MAX_MISMATCH_ADAPTER;
+  float max_mismatch_reads_frac = DEF_MAX_MISMATCH_READS;
+  char qcut = (char)DEF_QCUT+33;
   SQP sqp = SQP_init();
   /* No args - help!  */
   if ( argc == 1 ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:B:O:M:N:o:m:n:6h" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:M:N:o:m:n:6h" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -95,9 +109,37 @@ int main( int argc, char* argv[] ) {
     qcut = atoi(optarg)+33;
     break;
 
-    //TODO: OPTIONAL ADAPTER/PRIMER TRIMMING ARGUMENTS
+    //OPTIONAL ADAPTER/PRIMER TRIMMING ARGUMENTS
+    case 'A':
+    strcpy(forward_primer, optarg);
+    break;
+    case 'B':
+    strcpy(reverse_primer, optarg);
+    break;
+    case 'O':
+    min_ol_adapter = atoi(optarg);
+    break;
+    case 'M':
+    max_mismatch_adapter_frac = atof(optarg);
+    break;
+    case 'N':
+    min_match_adapter_frac = atof(optarg);
+    break;
 
-    //TODO: OPTIONAL MERGING ARGUMENTS
+    //OPTIONAL MERGING ARGUMENTS
+    case 's' :
+    do_read_merging = true;
+    strcpy( merged_out_fn, optarg );
+    break;
+    case 'o':
+    min_ol_reads = atoi(optarg);
+    break;
+    case 'm':
+    max_mismatch_reads_frac = atof(optarg);
+    break;
+    case 'n':
+    min_match_reads_frac = atof(optarg);
+    break;
 
 
     default :
@@ -108,14 +150,16 @@ int main( int argc, char* argv[] ) {
     fprintf(stderr, "Missing a required argument!\n");
     help(argv[0]);
   }
+
+  //TODO: Calculate table matching overlap length to min matches and max mismatches
+
+
   gzFile ffq = fileOpen(forward_fn, "r");
   gzFile rfq = fileOpen(reverse_fn, "r");
-  while(next_fastqs( ffq, rfq, sqp, p64 )){
-    //now first we need to find if a read has probable adapter overlap
-
-    // either trim adapter and return sequence, or merge and print file:
-    // if desired, also calculate overlap between reads and merge
-
+  while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
+    //TODO: first we need to find if a read has probable adapter overlap
+    //TODO: either trim adapter and print sequence, and/or merge and print to file:
+    //TODO: if desired, also calculate overlap between reads and merge
   }
 
 
