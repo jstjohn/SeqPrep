@@ -9,6 +9,7 @@
 #define MAX_SEQ_LEN (256)
 #define CODE_AMBIGUOUS (-2)
 #define CODE_NOMATCH (-1)
+#define CODE_NOADAPT (9999)
 
 /* Type to hold the forward and reverse read
    of a sequence pair with quality scores */
