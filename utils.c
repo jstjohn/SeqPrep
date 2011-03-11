@@ -20,8 +20,8 @@ void SQP_destroy(SQP sqp){
    Check to make sure their ID's are compatible and
    put the results in the next SQP of SQPDB. Grow
    this, if necessary.
-*/
-inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp ) {
+ */
+inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   int frs; // forward fastq read status
   int rrs; // reverse fastq read status
   int id1len = 0;
@@ -29,13 +29,20 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp ) {
   /* Read the next fastq record from the forward and reverse
      pair of each */
   frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, 
-                    curr_sqp->fqual, &id1len, &(curr_sqp->flen) );
+      curr_sqp->fqual, &id1len, &(curr_sqp->flen), p64 );
   rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, 
-                    curr_sqp->rqual, &id2len, &(curr_sqp->rlen) );
+      curr_sqp->rqual, &id2len, &(curr_sqp->rlen), p64 );
+
+//  //reverse comp the second read for overlapping and everything.
+//  strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
+//  strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
+//  revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
+//  rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
+
 
   if ( (frs == 1) &&
-       (rrs == 1) &&
-       f_r_id_check( fid, id1len, rid, id2len ) ) {
+      (rrs == 1) &&
+      f_r_id_check( fid, id1len, rid, id2len ) ) {
     return true;
   }
 
@@ -60,7 +67,7 @@ inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len
    Return 1 => more sequence to be had
           0 => EOF
  */
-int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len, int p64 ) {
+int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len, bool p64 ) {
   char c;
   size_t i;
   c = gzgetc( fastq );
@@ -73,7 +80,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   /* get identifier */
   i = 0;
   while( (!isspace(c=gzgetc( fastq ) ) &&
-	  (i < MAX_ID_LEN) ) ) {
+      (i < MAX_ID_LEN) ) ) {
     if ( c == EOF ) {
       return 0;
     }
@@ -89,7 +96,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   /* Now, everything else on the line is description (if anything)
      although fastq does not appear to formally support description */
   while ( (c != '\n') &&
-	  (c != EOF) ) {
+      (c != EOF) ) {
     c = gzgetc( fastq );
   }
 
@@ -97,8 +104,8 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   i = 0;
   c = gzgetc( fastq );
   while ( (c != '\n') &&
-	  (c != EOF) &&
-	  (i < MAX_SEQ_LEN) ) {
+      (c != EOF) &&
+      (i < MAX_SEQ_LEN) ) {
     if ( isspace(c) ) {
       ;
     }
@@ -115,7 +122,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
      past this line */
   if ( i == MAX_SEQ_LEN ) {
     while ( (c != '\n') &&
-	    (c != EOF) ) {
+        (c != EOF) ) {
       c = gzgetc( fastq );
     }
   }
@@ -130,7 +137,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
      as before or blank */
   c = gzgetc( fastq );
   while( (c != '\n') &&
-	 (c != EOF) ) {
+      (c != EOF) ) {
     c = gzgetc( fastq );
   }
 
@@ -138,8 +145,8 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   c = gzgetc( fastq );
   i = 0;
   while( (c != '\n') &&
-	 (c != EOF) &&
-	 (i < MAX_SEQ_LEN) ) {
+      (c != EOF) &&
+      (i < MAX_SEQ_LEN) ) {
     if ( isspace(c) ) {
       ;
     }
@@ -155,7 +162,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
      past this line */
   if ( i == MAX_SEQ_LEN ) {
     while ( (c != '\n') &&
-	    (c != EOF) ) {
+        (c != EOF) ) {
       c = gzgetc( fastq );
     }
   }
@@ -183,8 +190,8 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
 /* 
    Supply two sequences in the proper orientation for overlap
    Ie in this example give compute_ol the reversed sequence and quality
-   
-   
+
+
    then QUERY:       TGCTAGACTAGCATCG
                      | |||-|||
      SUBJECT: ACGTGCATCCTANACT
@@ -192,32 +199,30 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
    Therefore, the overlap would be 9. Ignore any
    base that has Quality score less than adj_q_cut
 
-*/
+ */
 
 int compute_ol(
-     char subjectSeq[], char subjectQual[]; size_t subjectLen; 
-     char querySeq[]; char queryQual[]; size_t queryLen; 
-     size_t min_olap, size_t min_match, size_t max_miss, 
-     bool check_unique, char adj_q_cut) {
-  
+    char subjectSeq[], char subjectQual[], size_t subjectLen,
+    char querySeq[], char queryQual[], size_t queryLen,
+    size_t min_olap, size_t min_match, size_t max_miss,
+    bool check_unique, char adj_q_cut) {
+
   size_t  pos;  
   /* Try each possible starting position 
      on the forward sequence */
   int best_hit = CODE_NOMATCH;
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
-    if ( k_match( &(subjectSeq[pos]),
-	       &(subjectQual[pos]),
-	       subjectLen,
-               querySeq, queryQual,
-               queryLen, min_match 
-               max_miss, adj_q_cut ) ) {
+    if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
+        subjectLen, querySeq, queryQual, queryLen,
+        min_match, max_miss, adj_q_cut ) ) {
+
       if(check_unique && best_hit != CODE_NOMATCH){
         return CODE_AMBIGUOUS;
       }
       if(best_hit == CODE_NOMATCH){
         if(!check_unique)
           return pos;
-	best_hit = pos;
+        best_hit = pos;
       }
     }
   }
@@ -237,17 +242,17 @@ int compute_ol(
    shortest, until it finds one. It doesn't require a match
    if either read has quality score less that QCUT.
    Returns: true if it's a match, false if it's not
-*/
+ */
 bool k_match( const char* s1, const char* q1, size_t len1, 
-	const char* s2, const char* q2, size_t len2, 
-	size_t minmatch, size_t maxmiss, char adj_q_cut ) {
+    const char* s2, const char* q2, size_t len2,
+    size_t minmatch, size_t maxmiss, char adj_q_cut ) {
   size_t i;
   size_t mismatch = 0;
   size_t match = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
     if ( (q1[i] >= adj_q_cut) &&
-	 (q2[i] >= adj_q_cut){
-      if (s1[i] != s2[i]) ) {
+        (q2[i] >= adj_q_cut)){
+      if (s1[i] != s2[i]) {
         mismatch++;
         if(mismatch >=max_miss)
           return false;
@@ -258,8 +263,7 @@ bool k_match( const char* s1, const char* q1, size_t len1,
   }
   if (match >= minmatch)
     return true;
-  else
-    return false;
+  return false;
 }
 
 
@@ -272,7 +276,7 @@ void revcom_seq( char seq[], int len ) {
     seq[i] = revcom_char(seq[len-(i+1)]);
     seq[len-(i+1)] = revcom_char(tmp_base);
   }
-  
+
   /* If sequence length is even, we're done, otherwise there is
      the base right in the center to revcom */
   if (len%2 == 1) {
@@ -283,48 +287,48 @@ void revcom_seq( char seq[], int len ) {
 inline char revcom_char(const char base) {
   switch (base) {
   case 'A':
-    return 'T';
+  return 'T';
   case 'a' :
-    return 't';
+  return 't';
 
   case 'C':
-    return 'G';
+  return 'G';
   case 'c' :
-    return 'g';
+  return 'g';
 
   case 'G':
-    return 'C';
+  return 'C';
   case 'g' :
-    return 'c';
-    
+  return 'c';
+
   case 'T':
-    return 'A';
+  return 'A';
   case 't' :
-    return 'a';
+  return 'a';
 
   case '-':
-    return '-';
-    
+  return '-';
+
   case 'N':
-    return 'N';
+  return 'N';
   case 'n':
-    return 'n';
+  return 'n';
 
   case 'X':
-    return 'X';
+  return 'X';
   case 'x':
-    return 'x';
-    
+  return 'x';
+
   default:
-    fprintf( stderr, "Do not know how to revcom \"%c\"\n", base);
-    return base;
+  fprintf( stderr, "Do not know how to revcom \"%c\"\n", base);
+  return base;
   }
 }
 
 inline void rev_qual( char q[], int len ) {
   char tmp_q;
   int  i;
-  
+
   for (i = 0; i < len/2; i++) {
     tmp_q = q[i];
     q[i] = q[len-(i+1)];

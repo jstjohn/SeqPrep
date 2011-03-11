@@ -20,6 +20,10 @@ typedef struct sqp {
   char rid[MAX_ID_LEN+1];
   char rseq[MAX_SEQ_LEN+1];
   char rqual[MAX_SEQ_LEN+1];
+  char rc_rseq[MAX_SEQ_LEN+1];
+  char rc_rqual[MAX_SEQ_LEN+1];
+  char merged_seq[MAX_SEQ_LEN+MAX_SEQ_LEN+1];
+  char merged_qual[MAX_SEQ_LEN+MAX_SEQ_LEN+1];
   size_t rlen;
   size_t insert_len; // only valid if guessing that primer is present in seq
   size_t for_rev_ol; // number of bases that (might) overlap in the
