@@ -11,8 +11,8 @@
 #define DEF_OL2MERGE_ADAPTER (10)
 #define DEF_OL2MERGE_READS (10)
 #define DEF_QCUT (13)
-#define DEF_MIN_MATCH_ADAPTER (0.4)
-#define DEF_MIN_MATCH_READS (0.4)
+#define DEF_MIN_MATCH_ADAPTER (0.7)
+#define DEF_MIN_MATCH_READS (0.8)
 #define DEF_MIN_READ_LEN (30)
 #define DEF_MAX_MISMATCH_ADAPTER (0.06)
 #define DEF_MAX_MISMATCH_READS (0.02)
@@ -38,13 +38,13 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );
   fprintf(stderr, "\t-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_REVERSE_PRIMER );
   fprintf(stderr, "\t-O <minimum overall base pair overlap with adapter sequence to trim; default = %d>\n", DEF_OL2MERGE_ADAPTER );
-  fprintf(stderr, "\t-M <maximum fraction of good quality, mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
-  fprintf(stderr, "\t-N <minimum fraction of good quality, matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
+  fprintf(stderr, "\t-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
+  fprintf(stderr, "\t-N <minimum fraction of matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
   fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
   fprintf(stderr, "\t-o <minimum overall base pair overlap to merge two reads; default = %d>\n", DEF_OL2MERGE_READS );
-  fprintf(stderr, "\t-m <minimum fraction of good quality, matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
-  fprintf(stderr, "\t-n <maximum fraction of good quality, mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
+  fprintf(stderr, "\t-m <minimum fraction of matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
+  fprintf(stderr, "\t-n <maximum fraction of good quality mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
   fprintf(stderr, "\n");
   exit( 1 );
 }
@@ -224,10 +224,12 @@ int main( int argc, char* argv[] ) {
         //print merged output
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
       }else{
-
+        //no significant overlap so just write them
+        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
       }
-
-
+      //done
+      continue;
     }else{ //just write reads to output fastqs
       write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
       write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);

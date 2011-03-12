@@ -10,6 +10,28 @@ SQP SQP_init(){
   return (SQP) malloc(sizeof(Sqp));
 }
 
+/**
+ * Calculates the resulting phred 33 score given a mismatch
+ */
+inline char mismatch_p33_merge(char pA, char pB){
+  if(pA > pB){
+    return pA-(pB-33);
+  }else{
+    return pB-(pA-33);
+  }
+}
+
+/**
+ * Calculates the resulting phred 33 score given a mismatch
+ */
+inline char match_p33_merge(char pA, char pB){
+    char res = pA+(pB-33);
+    if(res > MAX_QUAL)
+      return MAX_QUAL;
+    return res;
+}
+
+
 void SQP_destroy(SQP sqp){
   //free up an SQP
   free(sqp);
@@ -70,17 +92,13 @@ bool read_merge(SQP sqp, size_t min_olap,
     for(i=mpos;i<subjlen;i++){
       if(subjseq[i] == queryseq[i-mpos]){
         c = subjseq[i];
-        char tmp = subjqual[i]+queryqual[i-mpos];
-        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+        q = match_p33_merge(subjqual[i],queryqual[i-mpos]);
       }else{
-        if(subjseq[i] > queryseq[i-mpos]){
+        q = mismatch_p33_merge(subjqual[i],queryqual[i-mpos]);
+        if(subjqual[i] > queryqual[i-mpos]){
           c = subjseq[i];
-          char tmp = subjqual[i]+queryqual[i-mpos];
-          q = (tmp < 33)?33:tmp;
         }else{
           c = queryseq[i-mpos];
-          char tmp = queryqual[i-mpos] - subjqual[i];
-          q = (tmp < 33)?33:tmp;
         }
       }
       sqp->merged_seq[pos] = c;
@@ -116,17 +134,13 @@ void adapter_merge(SQP sqp){
     for(i=0; i< sqp->rlen; i++){
       if(sqp->rc_rseq[i] == sqp->fseq[i]){
         c = sqp->rc_rseq[i];
-        char tmp = sqp->rc_rqual[i]+sqp->fqual[i];
-        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+        q = match_p33_merge(sqp->rc_rqual[i],sqp->fqual[i]);
       }else{
+        q = mismatch_p33_merge(sqp->rc_rqual[i],sqp->fqual[i]);
         if(sqp->rc_rqual[i]>sqp->fqual[i]){
           c = sqp->rc_rseq[i];
-          char tmp = sqp->rc_rqual[i]-sqp->fqual[i];
-          q = (tmp < 33)?33:tmp;
         }else{
           c = sqp->fseq[i];
-          char tmp = sqp->fqual[i] - sqp->rc_rqual[i];
-          q = (tmp < 33)?33:tmp;
         }
       }
       sqp->merged_seq[i] = c;
@@ -185,17 +199,13 @@ void adapter_merge(SQP sqp){
     for(i=max_offset;i<querylen+max_offset;i++){
       if(subjseq[i] == queryseq[i-max_offset]){
         c = subjseq[i];
-        char tmp = subjqual[i]+queryqual[i-max_offset];
-        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+        q = match_p33_merge(subjqual[i],queryqual[i-max_offset]);
       }else{
-        if(subjseq[i] > queryseq[i-max_offset]){
+        q = mismatch_p33_merge(subjqual[i],queryqual[i-max_offset]);
+        if(subjqual[i] > queryqual[i-max_offset]){
           c = subjseq[i];
-          char tmp = subjqual[i]+queryqual[i-max_offset];
-          q = (tmp < 33)?33:tmp;
         }else{
           c = queryseq[i-max_offset];
-          char tmp = queryqual[i-max_offset] - subjqual[i];
-          q = (tmp < 33)?33:tmp;
         }
       }
       sqp->merged_seq[pos] = c;
@@ -416,11 +426,13 @@ int compute_ol(
   /* Try each possible starting position 
      on the forward sequence */
   int best_hit = CODE_NOMATCH;
+  int subject_len = subjectLen;
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
+    subject_len = subjectLen - pos;
     if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
-        subjectLen, querySeq, queryQual, queryLen,
-        min_match[(subjectLen-pos)>queryLen?queryLen:(subjectLen-pos)],
-        max_mismatch[(subjectLen-pos)>queryLen?queryLen:(subjectLen-pos)],
+        subject_len, querySeq, queryQual, queryLen,
+        min_match[subject_len>queryLen?queryLen:subject_len],
+        max_mismatch[subject_len>queryLen?queryLen:subject_len],
         adj_q_cut ) ) {
 
       if(check_unique && best_hit != CODE_NOMATCH){
@@ -458,8 +470,9 @@ bool k_match( const char* s1, const char* q1, size_t len1,
   size_t mismatch = 0;
   size_t match = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
-    if ( (q1[i] >= adj_q_cut) &&
-        (q2[i] >= adj_q_cut)){
+    //if we have a match, or at least bad quality bases...
+    if ( s1[i] == s2[i] || ((q1[i] >= adj_q_cut) &&
+        (q2[i] >= adj_q_cut))){
       if (s1[i] != s2[i]) {
         mismatch++;
         if(mismatch >=max_mismatch)

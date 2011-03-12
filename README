@@ -1,6 +1,6 @@
 
 Usage:
-./SeqPrep [Required Args] [Options]
+../SeqPrep [Required Args] [Options]
 Required Arguments:
 	-f <first read input fastq filename>
 	-r <second read input fastq filename>
@@ -17,13 +17,13 @@ Arguments for Adapter/Primer Trimming (Optional):
 	-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read
 		 (should validate by grepping a file); default = AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT>
 	-O <minimum overall base pair overlap with adapter sequence to trim; default = 10>
-	-M <maximum fraction of good quality, mismatching bases for primer/adapter overlap; default = 0.060000>
-	-N <minimum fraction of good quality, matching bases for primer/adapter overlap; default = 0.400000>
+	-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = 0.060000>
+	-N <minimum fraction of matching bases for primer/adapter overlap; default = 0.700000>
 Optional Arguments for Merging:
 	-s <perform merging and output the merged reads to this file>
 	-o <minimum overall base pair overlap to merge two reads; default = 10>
-	-m <minimum fraction of good quality, matching bases to overlap reads; default = 0.400000>
-	-n <maximum fraction of good quality, mismatching bases to overlap reads; default = 0.020000>
+	-m <minimum fraction of matching bases to overlap reads; default = 0.800000>
+	-n <maximum fraction of good quality mismatching bases to overlap reads; default = 0.020000>
 
 
 
@@ -43,9 +43,42 @@ I do the above test for the read overlapping (where it seems appropriate) but no
 
 To accept an alignment I allow some fraction of mismatches (currently the floor of 0.06*alignment length for adapter and 0.02*alignment length for two reads). That means that in most cases for overlapping two reads I don't allow any mismatches between adjacent reads, but if there is a 50bp potential overlap with 1 mismatch over q20 for example, I allow it. Anything below 50 needs to be perfect with that setting. 
 
-Since we ignore poor quality bases, we could have the case where a single real match followed by a long string of poor quality bases to the end of the read would result in a called overlap. That seemed like a bad idea. To get around that I require that at least some fraction of the overlapping length be actual high quality matches. Right now I have that parameter set at 0.4 for both adapter trimming and read merging, so for a case where only the last 10 bases overlap, at least 4 of those must be good quality matches. 
+Since we ignore poor quality bases, we could have the case where a single real match followed by a long string of poor quality bases to the end of the read would result in a called overlap. That seemed like a bad idea. To get around that I require that at least some fraction of the overlapping length be matches. Right now I have that parameter set at 0.7 for adapter trimming and 0.8 for read merging, so for a case where only the last 10 bases overlap, at least 7 or 8 of those must be matches. 
 
 Since doing that many floating point multiplications seems like a bad idea, I just have a table that pre-calculates all of those min matches and max mismatch numbers for every overlap length up to the maximum allowed read length.
 
 Finally I have a parameter you can set which specifies a minimum resulting read length after adapter trimming and/or merging so that ultra short trimmed reads aren't output.
 
+
+Results from hand testing the three main merge cases:
+Sequence Merge No Adapter Present:
+QUER: NCCTGCTACTACCACCCGTTCCGTGCCTGGAGCCTGCATGTTGGGCAGATACGTGCTGCCACAGCCTGTCTCTGCTGGTGCCTGGGCCTC
+                                        ||  |||||||||||| || |  |||||||||||||||||||||||||||||||||
+SUBJ:                                   TGTGTGTTGGGCAGATGCGGGGGGCCACAGCCTGTCTCTGCTGGTGCCTGGGCCTCTCCTGTTCCTTGCCCACGTCTCCGTCTCCTGTTG
+RESU: NCCTGCTACTACCACCCGTTCCGTGCCTGGAGCCTGCATGTTGGGCAGATACGTGCTGCCACAGCCTGTCTCTGCTGGTGCCTGGGCCTCTCCTGTTCCTTGCCCACGTCTCCGTCTCCTGTTG
+Quality Merge:
+QUER: !223387787@@@CCC22C@@@@@@@@@@@@@@@@@@@@@@@@@@@@?@@89887:::::.2125@@:@@:::::@@@@@<<::8@@@@@
+SUBJ:                                   !!!!!!!!!!!!!!!!!!!!!!!!!!!@@@8DEGE@EDDBB2<BBE@EHBFE@EE>D8@DBE>BFIDH@IIEEIIBEIEIIGBIIGIFII
+RESU: !223387787@@@CCC22C@@@@@@@@@@@@@@@@@@@@@@@@@@@@?@@89887:::::.QPQLSSSSSSSSSSQSSSSSSSSSSSSSSD8@DBE>BFIDH@IIEEIIBEIEIIGBIIGIFII
+
+
+Sequence Merge Adapter Present, Easy Peezy Mode (same lengths): (NOTE THIS IS MAX_Q 50, I upped it to 60 so the q string might be different now in the merged result)
+SUBJ: NGATATGATTCCCAATCTAAGCAAACTGTCATGGAAAC
+       |||||||||||||||||||||||||||||||||||||
+QUER: GGATATGATTCCCAATCTAAGCAAACTGTCATGGAAAC
+RESU: GGATATGATTCCCAATCTAAGCAAACTGTCATGGAAAC
+Quality Merge:
+SUBJ: !.-/.53444@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+QUER: IHGIIIDIIHGEHIGHIFHIFIIIIHIIIIIIIIIHII
+RESU: ISSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+
+
+Sequence merge Adapter but lengths differ:
+SUBJ: AATTGATGGGTGCCCACCCACGGGCCAGACAAAATCATCTGGCAAGCTGGATGCAGCCTACAAGCTGTAAGATTGGA
+      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+QUER: AATTGATGGGTGCCCACCCACGGGCCAGACAAAATCATCTGGCAAGCTGGATGCAGCCTACAAGCTGTA
+RESU: AATTGATGGGTGCCCACCCACGGGCCAGACAAAATCATCTGGCAAGCTGGATGCAGCCTACAAGCTGTAAGATTGGA
+Quality Merge:
+SUBJ: =DEC??DDBD?4B=BEE@@@GB>GEE:DE8=2::6GDGBGEGDD<=;A?=AGGGG=5.=<BD?B?DDB>B4725:E>
+QUER: GDDBBFBGGFBHFIEDGGGBDGGG<GGDDG@IIIEIHDIHGIIIDDGDGDFDIFIHGIDEGGGDIIIGI
+RESU: SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSB4725:E>
