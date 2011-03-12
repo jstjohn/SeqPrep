@@ -180,7 +180,7 @@ int main( int argc, char* argv[] ) {
   gzFile ffq = fileOpen(forward_fn, "r");
   gzFile ffqw = fileOpen(forward_out_fn,"w");
   gzFile rfq = fileOpen(reverse_fn, "r");
-  gzFile rfqw = fileOpen(forward_out_fn,"w");
+  gzFile rfqw = fileOpen(reverse_out_fn,"w");
   gzFile mfqw = NULL;
   if(do_read_merging)
     mfqw = fileOpen(merged_out_fn,"w");
