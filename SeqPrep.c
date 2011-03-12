@@ -10,12 +10,12 @@
 
 #define DEF_OL2MERGE_ADAPTER (10)
 #define DEF_OL2MERGE_READS (10)
-#define DEF_QCUT (20)
-#define DEF_MIN_MATCH_ADAPTER (0.5)
-#define DEF_MIN_MATCH_READS (0.5)
+#define DEF_QCUT (13)
+#define DEF_MIN_MATCH_ADAPTER (0.4)
+#define DEF_MIN_MATCH_READS (0.4)
 #define DEF_MIN_READ_LEN (30)
-#define DEF_MAX_MISMATCH_ADAPTER (0.1)
-#define DEF_MAX_MISMATCH_READS (0.01)
+#define DEF_MAX_MISMATCH_ADAPTER (0.06)
+#define DEF_MAX_MISMATCH_READS (0.02)
 //following primer sequences are from:
 //http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
 //and I validated both with grep, the first gets hits to the forward file only and the second
@@ -25,14 +25,14 @@
 void help ( char *prog_name ) {
   fprintf(stderr, "\n\nUsage:\n%s [Required Args] [Options]\n",prog_name );
   fprintf(stderr, "Required Arguments:\n" );
-  fprintf(stderr, "\t-f <forward fastq filename>\n" );
-  fprintf(stderr, "\t-r <reverse fastq filename>\n" );
-  fprintf(stderr, "\t-1 <forward output fastq filename>\n" );
-  fprintf(stderr, "\t-2 <reverse output fastq filename>\n" );
+  fprintf(stderr, "\t-f <first read input fastq filename>\n" );
+  fprintf(stderr, "\t-r <second read input fastq filename>\n" );
+  fprintf(stderr, "\t-1 <first read output fastq filename>\n" );
+  fprintf(stderr, "\t-2 <second read output fastq filename>\n" );
   fprintf(stderr, "General Arguments (Optional):\n" );
   fprintf(stderr, "\t-h Display this help message and exit (also works with no args) \n" );
   fprintf(stderr, "\t-6 Input sequence is in phred+64 rather than phred+33 format, the output will still be phred+33 \n" );
-  fprintf(stderr, "\t-q <Quality score cutoff for mismatches in overlap; default = %d>\n", DEF_QCUT );
+  fprintf(stderr, "\t-q <Quality score cutoff for mismatches to be counted in overlap; default = %d>\n", DEF_QCUT );
   fprintf(stderr, "\t-L <Minimum length of a trimmed or merged read to print it; default = %d>\n", DEF_MIN_READ_LEN );
   fprintf(stderr, "Arguments for Adapter/Primer Trimming (Optional):\n" );
   fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );

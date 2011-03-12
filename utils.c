@@ -419,7 +419,9 @@ int compute_ol(
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
     if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
         subjectLen, querySeq, queryQual, queryLen,
-        min_match[subjectLen-pos], max_mismatch[subjectLen-pos], adj_q_cut ) ) {
+        min_match[(subjectLen-pos)>queryLen?queryLen:(subjectLen-pos)],
+        max_mismatch[(subjectLen-pos)>queryLen?queryLen:(subjectLen-pos)],
+        adj_q_cut ) ) {
 
       if(check_unique && best_hit != CODE_NOMATCH){
         return CODE_AMBIGUOUS;
