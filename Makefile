@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-c -Wall -Werror -O3 -ffast-math
 COPTS=
 LDFLAGS=-lz -lm
-SOURCES=seqPrep.c utils.c
+SOURCES=SeqPrep.c utils.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=SeqPrep
 
