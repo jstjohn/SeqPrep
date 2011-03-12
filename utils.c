@@ -241,7 +241,7 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
 
   if ( (frs == 1) &&
       (rrs == 1) &&
-      f_r_id_check( curr_sqp->fid, *id1len, curr_sqp->rid, *id2len ) ) {
+      f_r_id_check( curr_sqp->fid, id1len, curr_sqp->rid, id2len ) ) {
     return true;
   }
 
