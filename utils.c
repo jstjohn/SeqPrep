@@ -223,14 +223,14 @@ void adapter_merge(SQP sqp){
 inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   int frs; // forward fastq read status
   int rrs; // reverse fastq read status
-  size_t *id1len = 0;
-  size_t *id2len = 0;
+  size_t id1len = 0;
+  size_t id2len = 0;
   /* Read the next fastq record from the forward and reverse
      pair of each */
   frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, 
-      curr_sqp->fqual, id1len, &(curr_sqp->flen), p64 );
+      curr_sqp->fqual, &id1len, &(curr_sqp->flen), p64 );
   rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, 
-      curr_sqp->rqual, id2len, &(curr_sqp->rlen), p64 );
+      curr_sqp->rqual, &id2len, &(curr_sqp->rlen), p64 );
 
   //  //reverse comp the second read for overlapping and everything.
   //  strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
