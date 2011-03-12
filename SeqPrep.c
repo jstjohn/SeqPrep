@@ -35,8 +35,8 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-q <Quality score cutoff for mismatches in overlap; default = %d>\n", DEF_QCUT );
   fprintf(stderr, "\t-L <Minimum length of a trimmed or merged read to print it; default = %d>\n", DEF_MIN_READ_LEN );
   fprintf(stderr, "Arguments for Adapter/Primer Trimming (Optional):\n" );
-  fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );
-  fprintf(stderr, "\t-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read (should validate by grepping a file); default = %s>\n", DEF_REVERSE_PRIMER );
+  fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );
+  fprintf(stderr, "\t-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_REVERSE_PRIMER );
   fprintf(stderr, "\t-O <minimum overall base pair overlap with adapter sequence to trim; default = %d>\n", DEF_OL2MERGE_ADAPTER );
   fprintf(stderr, "\t-M <maximum fraction of good quality, mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
   fprintf(stderr, "\t-N <minimum fraction of good quality, matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
