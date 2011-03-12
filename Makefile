@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-c -Wall -Werror -g
+CFLAGS=-c -Wall -Werror -O3
+#recommended options: -ffast-math -ftree-vectorize -march=core2 -mssse3
 COPTS=
 LDFLAGS=-lz -lm
 SOURCES=SeqPrep.c utils.c

@@ -31,15 +31,16 @@ typedef struct sqp {
   char merged_qual[MAX_SEQ_LEN+MAX_SEQ_LEN+1];
   size_t merged_len;
   size_t rlen;
-  size_t insert_len; // only valid if guessing that primer is present in seq
-  size_t for_rev_ol; // number of bases that (might) overlap in the
-                     // forward and reverse reads, unless insert_len
+  size_t mpos;
 } Sqp;
 typedef struct sqp* SQP;
 
 SQP SQP_init();
 void SQP_destroy(SQP sqp);
 void adapter_merge(SQP sqp);
+void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut);
+inline char mismatch_p33_merge(char pA, char pB);
+inline char match_p33_merge(char pA, char pB);
 bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
     unsigned short max_mismatch[MAX_SEQ_LEN+1],

@@ -22,13 +22,70 @@ inline char mismatch_p33_merge(char pA, char pB){
 }
 
 /**
- * Calculates the resulting phred 33 score given a mismatch
+ * Calculates the resulting phred 33 score given a match
  */
 inline char match_p33_merge(char pA, char pB){
-    char res = pA+(pB-33);
-    if(res > MAX_QUAL)
-      return MAX_QUAL;
-    return res;
+  char res = pA+(pB-33);
+  if(res > MAX_QUAL)
+    return MAX_QUAL;
+  return res;
+}
+
+/**
+ * Print the alignment in the pretty form:
+ * Subj:        TGCTAGACTAGCATCG
+ *              | |||*|||
+ * Quer: ACGTGCATCCTANACT
+ * Stars represent good quality mismatches,
+ * spaces represent ignored mismatches,
+ * vertical bars represent matches of any type
+ *
+ */
+void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut){
+  char *queryseq;
+  char *queryqual;
+  char *subjseq;
+  char *subjqual;
+  int querylen = 0;
+  int subjlen = 0;
+  int i;
+  if(sqp->flen >= sqp->rlen){
+    subjseq = sqp->fseq;
+    subjqual = sqp->fqual;
+    queryseq = sqp->rc_rseq;
+    queryqual = sqp->rc_rqual;
+    querylen = sqp->rlen;
+    subjlen = sqp->flen;
+  }else{
+    subjseq = sqp->rc_rseq;
+    subjqual = sqp->rc_rqual;
+    queryseq = sqp->fseq;
+    queryqual = sqp->fqual;
+    querylen = sqp->flen;
+    subjlen = sqp->rlen;
+  }
+  gzprintf(out, "ID: %s\n",sqp->fid);
+  gzprintf(out, "SUBJ: %s\n",subjseq);
+  //now print out the bars
+  gzprintf(out, "      "); //initial space
+  for(i=0;i<sqp->merged_len;i++){
+    if(i >= sqp->mpos && i < subjlen && i < (querylen + sqp->mpos)){
+      //we are in the overlapping region
+      if(subjseq[i] == queryseq[i-sqp->mpos])
+        gzputc(out,'|');
+      else if(subjqual[i] < adj_q_cut || queryqual[i-sqp->mpos] < adj_q_cut)
+        gzputc(out,' ');
+      else
+        gzputc(out,'*');
+    }else{
+      gzputc(out,' ');
+    }
+  }
+  gzprintf(out,"\nQUER: ");
+  for(i=0;i<sqp->mpos;i++)
+    gzputc(out,' '); //spaces before aln
+  gzprintf(out,"%s",queryseq);
+  gzprintf(out,"\nMERG: %s\n\n",sqp->merged_seq);
 }
 
 
@@ -114,6 +171,7 @@ bool read_merge(SQP sqp, size_t min_olap,
     sqp->merged_len = pos;
     sqp->merged_seq[pos] = '\0';
     sqp->merged_qual[pos] = '\0';
+    sqp->mpos = mpos;
     return true; //successfull merge complete!
   }
   return false;
@@ -149,6 +207,7 @@ void adapter_merge(SQP sqp){
     sqp->merged_len = sqp->rlen;
     sqp->merged_qual[i] = '\0';
     sqp->merged_seq[i] = '\0';
+    sqp->mpos = 0;
   }else{
     int num_match = 0;
     int max_match = 0;
@@ -221,6 +280,7 @@ void adapter_merge(SQP sqp){
     sqp->merged_seq[pos]='\0';
     sqp->merged_qual[pos]='\0';
     sqp->merged_len = pos;
+    sqp->mpos = max_offset;
   }//end case where we need to find the best merging
 }
 

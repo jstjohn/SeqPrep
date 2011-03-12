@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 #include "utils.h"
 
 #define DEF_OL2MERGE_ADAPTER (10)
@@ -16,6 +17,7 @@
 #define DEF_MIN_READ_LEN (30)
 #define DEF_MAX_MISMATCH_ADAPTER (0.06)
 #define DEF_MAX_MISMATCH_READS (0.02)
+#define DEF_MAX_PRETTY_PRINT (10000)
 //following primer sequences are from:
 //http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
 //and I validated both with grep, the first gets hits to the forward file only and the second
@@ -42,6 +44,8 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-N <minimum fraction of matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
   fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
+  fprintf(stderr, "\t-E <write pretty alignments to this file for visual Examination>\n" );
+  fprintf(stderr, "\t-x <max number of pretty alignments to write (if -E provided); default = %d>\n", DEF_MAX_PRETTY_PRINT );
   fprintf(stderr, "\t-o <minimum overall base pair overlap to merge two reads; default = %d>\n", DEF_OL2MERGE_READS );
   fprintf(stderr, "\t-m <minimum fraction of matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
   fprintf(stderr, "\t-n <maximum fraction of good quality mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
@@ -50,6 +54,16 @@ void help ( char *prog_name ) {
 }
 
 int main( int argc, char* argv[] ) {
+  unsigned long long num_pairs;
+  unsigned long long num_merged;
+  unsigned long long num_adapter;
+  unsigned long long num_discarded;
+  unsigned long long num_too_ambiguous_to_merge;
+  unsigned long long max_pretty_print = DEF_MAX_PRETTY_PRINT;
+  unsigned long long num_pretty_print = 0;
+  clock_t start, end;
+  //init to 0
+  num_pairs = num_merged = num_adapter = num_discarded = num_too_ambiguous_to_merge = 0;
   extern char* optarg;
   bool p64 = false;
   char forward_fn[MAX_FN_LEN];
@@ -82,13 +96,15 @@ int main( int argc, char* argv[] ) {
   unsigned short min_match_adapter[MAX_SEQ_LEN+1];
   unsigned short min_match_reads[MAX_SEQ_LEN+1];
   char qcut = (char)DEF_QCUT+33;
+  bool pretty_print = false;
+  char pretty_print_fn[MAX_FN_LEN+1];
   SQP sqp = SQP_init();
   /* No args - help!  */
   if ( argc == 1 ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:M:N:L:o:m:n:6h" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:n:6h" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -154,6 +170,13 @@ int main( int argc, char* argv[] ) {
     case 'n':
     min_match_reads_frac = atof(optarg);
     break;
+    case 'E':
+    pretty_print = true;
+    strcpy(pretty_print_fn,optarg);
+    break;
+    case 'x':
+    max_pretty_print = atol(optarg);
+    break;
 
 
     default :
@@ -164,7 +187,7 @@ int main( int argc, char* argv[] ) {
     fprintf(stderr, "Missing a required argument!\n");
     help(argv[0]);
   }
-
+  start = clock();
   //Calculate table matching overlap length to min matches and max mismatches
   for(i=0;i<MAX_SEQ_LEN+1;i++){
     max_mismatch_reads[i] = floor(((float)i)*max_mismatch_reads_frac);
@@ -182,10 +205,19 @@ int main( int argc, char* argv[] ) {
   gzFile rfq = fileOpen(reverse_fn, "r");
   gzFile rfqw = fileOpen(reverse_out_fn,"w");
   gzFile mfqw = NULL;
+  gzFile ppaw = NULL;
   if(do_read_merging)
     mfqw = fileOpen(merged_out_fn,"w");
+  if(pretty_print)
+    ppaw = fileOpen(pretty_print_fn,"w");
   int fpos,rpos;
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
+    num_pairs++;
+    if(num_pairs % 8000 == 0){
+      if(num_pairs % 100000 == 0)
+        fprintf(stderr,"\n");
+      fprintf(stderr,".");
+    }
 
     fpos = compute_ol(sqp->fseq,sqp->fqual,sqp->flen,
         forward_primer, forward_primer_dummy_qual, forward_primer_len,
@@ -197,8 +229,11 @@ int main( int argc, char* argv[] ) {
         false, qcut);
     if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
       //check if reads are long enough to do anything with.
-      if((fpos < min_read_len) || (rpos < min_read_len))
+      num_adapter++;
+      if((fpos < min_read_len) || (rpos < min_read_len)){
+        num_discarded++;
         continue; //ignore these reads and move on.
+      }
 
       // trim adapters
       sqp->fseq[fpos] = '\0';
@@ -212,8 +247,13 @@ int main( int argc, char* argv[] ) {
         write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
 
       }else{ //force merge
+        num_merged++;
         adapter_merge(sqp);
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        if(pretty_print && num_pretty_print < max_pretty_print){
+          num_pretty_print++;
+          pretty_print_alignment(ppaw,sqp,qcut);
+        }
       }
       //we are done
       continue;
@@ -222,7 +262,12 @@ int main( int argc, char* argv[] ) {
     if(do_read_merging){
       if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){
         //print merged output
+        num_merged++;
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        if(pretty_print && num_pretty_print < max_pretty_print){
+          num_pretty_print++;
+          pretty_print_alignment(ppaw,sqp,qcut);
+        }
       }else{
         //no significant overlap so just write them
         write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
@@ -236,6 +281,15 @@ int main( int argc, char* argv[] ) {
       continue; //done
     }
   }
+  end = clock();
+  double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  fprintf(stderr,"\nPairs Processed:\t%lld\n",num_pairs);
+  fprintf(stderr,"Pairs Merged:\t%lld\n",num_merged);
+  fprintf(stderr,"Pairs With Adapters:\t%lld\n",num_adapter);
+  fprintf(stderr,"Pairs Discarded:\t%lld\n",num_discarded);
+  fprintf(stderr,"CPU Time Used (Minutes):\t%lf\n",cpu_time_used/60.0);
+
+  SQP_destroy(sqp);
   gzclose(ffq);
   gzclose(ffqw);
   gzclose(rfq);
