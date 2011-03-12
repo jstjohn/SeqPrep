@@ -15,6 +15,205 @@ void SQP_destroy(SQP sqp){
   free(sqp);
 }
 
+/**
+ * read_merge:
+ *    Computes the potential overlap between two reads,
+ *    fills the merged_seq items in sqp
+ *    return true if a merging was done, and false otherwise
+ *
+ *  WARNING: this function currently works by assuming that
+ *  the second read is not a subset of the first read. This can be
+ *  guarenteed if the second read is the same length as the first.
+ */
+bool read_merge(SQP sqp, size_t min_olap,
+    unsigned short min_match[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch[MAX_SEQ_LEN+1],
+    char adj_q_cut){
+  //first reverse complement reads
+  strcpy(sqp->rc_rseq,sqp->rseq);
+  strcpy(sqp->rc_rqual,sqp->rqual);
+  rev_qual(sqp->rc_rqual,sqp->rlen);
+  revcom_seq(sqp->rc_rseq,sqp->rlen);
+  //now compute overlap
+  int i;
+
+  char *queryseq;
+  char *queryqual;
+  char *subjseq;
+  char *subjqual;
+  int querylen = 0;
+  int subjlen = 0;
+  char c,q;
+  subjseq = sqp->fseq;
+  subjqual = sqp->fqual;
+  queryseq = sqp->rc_rseq;
+  queryqual = sqp->rc_rqual;
+  querylen = sqp->rlen;
+  subjlen = sqp->flen;
+
+  int mpos = compute_ol(
+      subjseq, subjqual, subjlen,
+      queryseq, queryqual, querylen,
+      min_olap, min_match, max_mismatch,
+      true, adj_q_cut );
+  if(mpos == CODE_NOMATCH || mpos == CODE_AMBIGUOUS){
+    return false;
+  }else{
+    //part where subj is non-overlapping
+    int pos = 0;
+    for(i=0;i<mpos;i++){
+      sqp->merged_seq[pos] = subjseq[i];
+      sqp->merged_qual[pos] = subjqual[i];
+      pos++;
+    }
+    //overlapping section
+    for(i=mpos;i<subjlen;i++){
+      if(subjseq[i] == queryseq[i-mpos]){
+        c = subjseq[i];
+        char tmp = subjqual[i]+queryqual[i-mpos];
+        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+      }else{
+        if(subjseq[i] > queryseq[i-mpos]){
+          c = subjseq[i];
+          char tmp = subjqual[i]+queryqual[i-mpos];
+          q = (tmp < 33)?33:tmp;
+        }else{
+          c = queryseq[i-mpos];
+          char tmp = queryqual[i-mpos] - subjqual[i];
+          q = (tmp < 33)?33:tmp;
+        }
+      }
+      sqp->merged_seq[pos] = c;
+      sqp->merged_qual[pos] = q;
+      pos++;
+    }
+    //part where query is non-overlapping
+    for(i=subjlen-mpos;i<querylen;i++){
+      sqp->merged_seq[pos] = queryseq[i];
+      sqp->merged_qual[pos] = queryqual[i];
+      pos++;
+    }
+    sqp->merged_len = pos;
+    sqp->merged_seq[pos] = '\0';
+    sqp->merged_qual[pos] = '\0';
+    return true; //successfull merge complete!
+  }
+  return false;
+}
+
+
+void adapter_merge(SQP sqp){
+  //first RC reverse read so we can do direct overlapping
+  strcpy(sqp->rc_rseq, sqp->rseq);
+  strcpy(sqp->rc_rqual, sqp->rqual);
+  revcom_seq(sqp->rc_rseq,sqp->rlen);
+  rev_qual(sqp->rc_rqual,sqp->rlen);
+  int i = 0;
+  int j = 0;
+  char c,q;
+  if(sqp->rlen == sqp->flen){
+    //easy.. peezy.. lemaon.... squeezy..
+    for(i=0; i< sqp->rlen; i++){
+      if(sqp->rc_rseq[i] == sqp->fseq[i]){
+        c = sqp->rc_rseq[i];
+        char tmp = sqp->rc_rqual[i]+sqp->fqual[i];
+        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+      }else{
+        if(sqp->rc_rqual[i]>sqp->fqual[i]){
+          c = sqp->rc_rseq[i];
+          char tmp = sqp->rc_rqual[i]-sqp->fqual[i];
+          q = (tmp < 33)?33:tmp;
+        }else{
+          c = sqp->fseq[i];
+          char tmp = sqp->fqual[i] - sqp->rc_rqual[i];
+          q = (tmp < 33)?33:tmp;
+        }
+      }
+      sqp->merged_seq[i] = c;
+      sqp->merged_qual[i] = q;
+    }
+    sqp->merged_len = sqp->rlen;
+    sqp->merged_qual[i] = '\0';
+    sqp->merged_seq[i] = '\0';
+  }else{
+    int num_match = 0;
+    int max_match = 0;
+    int max_offset = 0;
+    char *queryseq;
+    char *queryqual;
+    char *subjseq;
+    char *subjqual;
+    int querylen = 0;
+    int subjlen = 0;
+    int ndiff = 0;
+    if(sqp->flen > sqp->rlen){
+      ndiff = sqp->flen - sqp->rlen;
+      subjseq = sqp->fseq;
+      subjqual = sqp->fqual;
+      queryseq = sqp->rc_rseq;
+      queryqual = sqp->rc_rqual;
+      querylen = sqp->rlen;
+      subjlen = sqp->flen;
+    }else{
+      ndiff = sqp->rlen - sqp->flen;
+      subjseq = sqp->rc_rseq;
+      subjqual = sqp->rc_rqual;
+      queryseq = sqp->fseq;
+      queryqual = sqp->fqual;
+      querylen = sqp->flen;
+      subjlen = sqp->rlen;
+    }
+    for(i=0;i<ndiff;i++){
+      num_match = 0;
+      for(j=0;j<querylen;j++){
+        if(subjseq[i+j] == queryseq[j])
+          num_match++;
+      }
+      if(num_match>max_match){
+        max_offset = i;
+        max_match = num_match;
+      }
+    }//end for
+    //now we have our best offset, use that and build our merged_sequence
+    int pos = 0;
+    for(i=0;i<max_offset;i++){
+      sqp->merged_seq[pos] = subjseq[i];
+      sqp->merged_qual[pos] = subjqual[i];
+      pos++;
+    }
+    //now do the part that overlaps
+    for(i=max_offset;i<querylen+max_offset;i++){
+      if(subjseq[i] == queryseq[i-max_offset]){
+        c = subjseq[i];
+        char tmp = subjqual[i]+queryqual[i-max_offset];
+        q = (tmp > MAX_QUAL)?MAX_QUAL:tmp;
+      }else{
+        if(subjseq[i] > queryseq[i-max_offset]){
+          c = subjseq[i];
+          char tmp = subjqual[i]+queryqual[i-max_offset];
+          q = (tmp < 33)?33:tmp;
+        }else{
+          c = queryseq[i-max_offset];
+          char tmp = queryqual[i-max_offset] - subjqual[i];
+          q = (tmp < 33)?33:tmp;
+        }
+      }
+      sqp->merged_seq[pos] = c;
+      sqp->merged_qual[pos] = q;
+      pos++;
+    }
+    //finish off the subject sequence
+    for(i=(querylen+max_offset); i<subjlen; i++){
+      sqp->merged_seq[pos] = subjseq[i];
+      sqp->merged_qual[pos] = subjqual[i];
+      pos++;
+    }
+    sqp->merged_seq[pos]='\0';
+    sqp->merged_qual[pos]='\0';
+    sqp->merged_len = pos;
+  }//end case where we need to find the best merging
+}
+
 /* next_fastqs
    Read the next forward and reverse fastq sequences.
    Check to make sure their ID's are compatible and
@@ -24,25 +223,25 @@ void SQP_destroy(SQP sqp){
 inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   int frs; // forward fastq read status
   int rrs; // reverse fastq read status
-  int id1len = 0;
-  int id2len = 0;
+  size_t *id1len = 0;
+  size_t *id2len = 0;
   /* Read the next fastq record from the forward and reverse
      pair of each */
   frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, 
-      curr_sqp->fqual, &id1len, &(curr_sqp->flen), p64 );
+      curr_sqp->fqual, id1len, &(curr_sqp->flen), p64 );
   rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, 
-      curr_sqp->rqual, &id2len, &(curr_sqp->rlen), p64 );
+      curr_sqp->rqual, id2len, &(curr_sqp->rlen), p64 );
 
-//  //reverse comp the second read for overlapping and everything.
-//  strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
-//  strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
-//  revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
-//  rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
+  //  //reverse comp the second read for overlapping and everything.
+  //  strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
+  //  strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
+  //  revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
+  //  rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
 
 
   if ( (frs == 1) &&
       (rrs == 1) &&
-      f_r_id_check( fid, id1len, rid, id2len ) ) {
+      f_r_id_check( curr_sqp->fid, *id1len, curr_sqp->rid, *id2len ) ) {
     return true;
   }
 
@@ -51,13 +250,18 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   }
 }
 
+inline int write_fastq(gzFile out, char id[], char seq[], char qual[]){
+  return gzprintf(out,"@%s\n%s\n+\n%s\n", id, seq, qual);
+}
+
+
 inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
     return false; //trivial case
   }
 
   //expect last two characters are not equal
-  if (strcmpi( fid, rid, fid_len - 2) == 0 ) {
+  if (strncmp( fid, rid, fid_len - 2) == 0 ) {
     return true;
   }
   return false;
@@ -204,8 +408,9 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
 int compute_ol(
     char subjectSeq[], char subjectQual[], size_t subjectLen,
     char querySeq[], char queryQual[], size_t queryLen,
-    size_t min_olap, size_t min_match, size_t max_miss,
-    bool check_unique, char adj_q_cut) {
+    size_t min_olap, unsigned short min_match[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch[MAX_SEQ_LEN+1],
+    bool check_unique, char adj_q_cut ) {
 
   size_t  pos;  
   /* Try each possible starting position 
@@ -214,7 +419,7 @@ int compute_ol(
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
     if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
         subjectLen, querySeq, queryQual, queryLen,
-        min_match, max_miss, adj_q_cut ) ) {
+        min_match[subjectLen-pos], max_mismatch[subjectLen-pos], adj_q_cut ) ) {
 
       if(check_unique && best_hit != CODE_NOMATCH){
         return CODE_AMBIGUOUS;
@@ -245,7 +450,8 @@ int compute_ol(
  */
 bool k_match( const char* s1, const char* q1, size_t len1, 
     const char* s2, const char* q2, size_t len2,
-    size_t minmatch, size_t maxmiss, char adj_q_cut ) {
+    unsigned short min_match, unsigned short max_mismatch,
+    char adj_q_cut) {
   size_t i;
   size_t mismatch = 0;
   size_t match = 0;
@@ -254,14 +460,14 @@ bool k_match( const char* s1, const char* q1, size_t len1,
         (q2[i] >= adj_q_cut)){
       if (s1[i] != s2[i]) {
         mismatch++;
-        if(mismatch >=max_miss)
+        if(mismatch >=max_mismatch)
           return false;
       }else{
         match++;
       }
     }
   }
-  if (match >= minmatch)
+  if (match >= min_match)
     return true;
   return false;
 }
