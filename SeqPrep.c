@@ -234,6 +234,11 @@ int main( int argc, char* argv[] ) {
       continue; //done
     }
   }
-
+  gzclose(ffq);
+  gzclose(ffqw);
+  gzclose(rfq);
+  gzclose(rfqw);
+  if(mfqw != NULL)
+    gzclose(mfqw);
   return 0;
 }
