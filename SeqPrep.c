@@ -197,16 +197,16 @@ int main( int argc, char* argv[] ) {
         false, qcut);
     if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
       //check if reads are long enough to do anything with.
-      if(((sqp->flen - fpos) < min_read_len) || ((sqp->rlen - rpos) < min_read_len))
+      if((fpos < min_read_len) || (rpos < min_read_len))
         continue; //ignore these reads and move on.
 
       // trim adapters
       sqp->fseq[fpos] = '\0';
       sqp->fqual[fpos] = '\0';
-      sqp->flen = (sqp->flen - fpos);
+      sqp->flen = fpos;
       sqp->rseq[rpos] = '\0';
       sqp->rqual[rpos] = '\0';
-      sqp->rlen = (sqp->rlen - rpos);
+      sqp->rlen = rpos;
       if(!do_read_merging){ //just print
         write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
         write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
