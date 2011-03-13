@@ -18,7 +18,8 @@
 #define DEF_MAX_MISMATCH_ADAPTER (0.06)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
-#define SPIN_INTERVAL (1000)
+//two revolutions of 4 positions = 5000 reads
+#define SPIN_INTERVAL (625)
 //following primer sequences are from:
 //http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
 //and I validated both with grep, the first gets hits to the forward file only and the second
