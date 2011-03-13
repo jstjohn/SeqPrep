@@ -236,7 +236,7 @@ void adapter_merge(SQP sqp){
       querylen = sqp->flen;
       subjlen = sqp->rlen;
     }
-    for(i=0;i<ndiff;i++){
+    for(i=0;i<=ndiff;i++){
       num_match = 0;
       for(j=0;j<querylen;j++){
         if(subjseq[i+j] == queryseq[j])
