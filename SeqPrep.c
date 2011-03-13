@@ -18,6 +18,7 @@
 #define DEF_MAX_MISMATCH_ADAPTER (0.06)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
+#define SPIN_INTERVAL (1000)
 //following primer sequences are from:
 //http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
 //and I validated both with grep, the first gets hits to the forward file only and the second
@@ -52,6 +53,38 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\n");
   exit( 1 );
 }
+
+static unsigned short spcount = 0;
+/**
+ * Have a nice spinner to give you a false sense of hope
+ */
+inline void update_spinner(unsigned long long num_reads){
+  if(num_reads == 0){
+    fprintf(stderr,"Processing reads... |");
+    fflush(stderr);
+  }else if (num_reads % SPIN_INTERVAL == 0){
+    switch(spcount % 4){
+    case 0:
+    fprintf(stderr,"\b/");
+    fflush(stderr);
+    break;
+    case 1:
+    fprintf(stderr,"\b-");
+    fflush(stderr);
+    break;
+    case 2:
+    fprintf(stderr,"\b\\");
+    fflush(stderr);
+    break;
+    default:
+    fprintf(stderr,"\b|");
+    fflush(stderr);
+    break;
+    }
+    spcount++;
+  }
+}
+
 
 int main( int argc, char* argv[] ) {
   unsigned long long num_pairs;
@@ -212,12 +245,8 @@ int main( int argc, char* argv[] ) {
     ppaw = fileOpen(pretty_print_fn,"w");
   int fpos,rpos;
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
+    update_spinner(num_pairs);
     num_pairs++;
-    if(num_pairs %   5000 == 0){
-      if(num_pairs % 500000 == 0)
-        fprintf(stderr,"\n");
-      fprintf(stderr,".");
-    }
 
     fpos = compute_ol(sqp->fseq,sqp->fqual,sqp->flen,
         forward_primer, forward_primer_dummy_qual, forward_primer_len,
