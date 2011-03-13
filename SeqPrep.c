@@ -226,8 +226,8 @@ int main( int argc, char* argv[] ) {
   for(i=0;i<MAX_SEQ_LEN+1;i++){
     max_mismatch_reads[i] = floor(((float)i)*max_mismatch_reads_frac);
     max_mismatch_adapter[i] = floor(((float)i)*max_mismatch_adapter_frac);
-    min_match_reads[i] = floor(((float)i)*min_match_reads_frac);
-    min_match_adapter[i] = floor(((float)i)*min_match_adapter_frac);
+    min_match_reads[i] = ceil(((float)i)*min_match_reads_frac);
+    min_match_adapter[i] = ceil(((float)i)*min_match_adapter_frac);
   }
   //get length of forward and reverse primers
   int forward_primer_len = strlen(forward_primer);
