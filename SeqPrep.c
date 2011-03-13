@@ -13,7 +13,7 @@
 #define DEF_OL2MERGE_READS (10)
 #define DEF_QCUT (13)
 #define DEF_MIN_MATCH_ADAPTER (0.7)
-#define DEF_MIN_MATCH_READS (0.7)
+#define DEF_MIN_MATCH_READS (0.75)
 #define DEF_MIN_READ_LEN (30)
 #define DEF_MAX_MISMATCH_ADAPTER (0.06)
 #define DEF_MAX_MISMATCH_READS (0.02)
@@ -213,8 +213,8 @@ int main( int argc, char* argv[] ) {
   int fpos,rpos;
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
     num_pairs++;
-    if(num_pairs % 8000 == 0){
-      if(num_pairs % 100000 == 0)
+    if(num_pairs %   5000 == 0){
+      if(num_pairs % 500000 == 0)
         fprintf(stderr,"\n");
       fprintf(stderr,".");
     }

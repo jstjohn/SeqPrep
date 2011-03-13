@@ -467,7 +467,7 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
 
 
    then QUERY:       TGCTAGACTAGCATCG
-                     | |||-|||
+                     |*||| |||
      SUBJECT: ACGTGCATCCTANACT
 
    Therefore, the overlap would be 9. Ignore any
