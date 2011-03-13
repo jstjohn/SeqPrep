@@ -296,5 +296,7 @@ int main( int argc, char* argv[] ) {
   gzclose(rfqw);
   if(mfqw != NULL)
     gzclose(mfqw);
+  if(ppaw != NULL)
+    gzclose(ppaw);
   return 0;
 }
