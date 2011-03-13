@@ -30,6 +30,7 @@ Optional Arguments for Merging:
 
 
 My current strategy to deal with ambiguous alignments to low complexity regions is as follows:
+
 1. I have some minimum requirements for an overlap to be accepted
 2. After the first one is found (ie the one with the maximal overlap between the two sequences), if low complexity filtering is enabled, I keep searching
 3. if a second viable hit is found, I give up and say that it is not a good idea to merge the two reads.
