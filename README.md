@@ -45,7 +45,7 @@ Since doing that many floating point multiplications seems like a bad idea, I ju
 
 Finally I have a parameter you can set which specifies a minimum resulting read length after adapter trimming and/or merging so that ultra short trimmed reads aren't output.
 
-Following are results from hand testing the three main merge cases. Now to generate similar output automatically just supply the -E readable_alignment.txt.gz argument to the program (the output is gzip compressed into the file name specified).
+Following are results from hand testing the three main merge cases. Now to generate similar output automatically just supply the `-E readable_alignment.txt.gz` argument to the program (the output is gzip compressed into the file name specified).
 
 Sequence Merge No Adapter Present:
 	QUER: NCCTGCTACTACCACCCGTTCCGTGCCTGGAGCCTGCATGTTGGGCAGATACGTGCTGCCACAGCCTGTCTCTGCTGGTGCCTGGGCCTC
