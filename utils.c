@@ -123,12 +123,21 @@ bool read_merge(SQP sqp, size_t min_olap,
   int querylen = 0;
   int subjlen = 0;
   char c,q;
-  subjseq = sqp->fseq;
-  subjqual = sqp->fqual;
-  queryseq = sqp->rc_rseq;
-  queryqual = sqp->rc_rqual;
-  querylen = sqp->rlen;
-  subjlen = sqp->flen;
+  if(sqp->rlen <= sqp->flen){
+    subjseq = sqp->fseq;
+    subjqual = sqp->fqual;
+    queryseq = sqp->rc_rseq;
+    queryqual = sqp->rc_rqual;
+    querylen = sqp->rlen;
+    subjlen = sqp->flen;
+  }else{
+    queryseq = sqp->fseq;
+    queryqual = sqp->fqual;
+    subjseq = sqp->rc_rseq;
+    subjqual = sqp->rc_rqual;
+    subjlen = sqp->rlen;
+    querylen = sqp->flen;
+  }
 
   int mpos = compute_ol(
       subjseq, subjqual, subjlen,
