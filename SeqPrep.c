@@ -11,7 +11,7 @@
 
 #define DEF_OL2MERGE_ADAPTER (10)
 #define DEF_OL2MERGE_READS (15)
-#define DEF_QCUT (13)
+#define DEF_QCUT (6)
 #define DEF_MIN_MATCH_ADAPTER (0.7)
 #define DEF_MIN_MATCH_READS (0.75)
 #define DEF_MIN_READ_LEN (30)
