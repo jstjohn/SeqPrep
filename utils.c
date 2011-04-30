@@ -575,6 +575,7 @@ void revcom_seq( char seq[], int len ) {
 }
 
 inline char revcom_char(const char base) {
+  static bool warned = false;
   switch (base) {
   case 'A':
   return 'T';
@@ -610,7 +611,10 @@ inline char revcom_char(const char base) {
   return 'x';
 
   default:
-  fprintf( stderr, "Do not know how to revcom \"%c\"\n", base);
+  if(!warned){
+    warned = true;
+    fprintf( stderr, "WARNING: Non standard DNA character in sequence: \"%c\"\n", base);
+  }
   return base;
   }
 }
