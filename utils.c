@@ -336,12 +336,13 @@ inline int write_fastq(gzFile out, char id[], char seq[], char qual[]){
 
 inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
-    continue;
+    goto bad_read;
   }else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
     return true;
   }
 
-  fprintf("ERROR: Fastq id lines do not match: %s vs %s \n", fid, rid);
+  bad_read:
+  fprintf(stderr,"ERROR: Fastq id lines do not match: %s vs %s \n", fid, rid);
   return false;
 }
 
