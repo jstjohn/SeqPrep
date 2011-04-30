@@ -597,9 +597,11 @@ inline char revcom_char(const char base) {
   case 't' :
   return 'a';
 
+ //ignore special characters
   case '-':
   return '-';
-
+  case '.':
+    return '.';
   case 'N':
   return 'N';
   case 'n':

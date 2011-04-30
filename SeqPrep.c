@@ -28,6 +28,8 @@
 #define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
 void help ( char *prog_name ) {
   fprintf(stderr, "\n\nUsage:\n%s [Required Args] [Options]\n",prog_name );
+  fprintf(stderr, "NOTE 1: The output is always gziped compressed.\n");
+  fprintf(stderr, "NOTE 2: If the quality strings in the output contain characters less than ascii 33 on an ascii table, try running again with or without the -6 option.\n");
   fprintf(stderr, "Required Arguments:\n" );
   fprintf(stderr, "\t-f <first read input fastq filename>\n" );
   fprintf(stderr, "\t-r <second read input fastq filename>\n" );
