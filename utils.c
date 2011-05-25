@@ -168,14 +168,46 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
       //no adapter
       return false;
     }else{
-      //trim ppos bases off beginning of query and end of subj
-      if(sqp->rlen > sqp->flen)
-        sqp->flen = sqp->flen - max(0, sqp->rlen - sqp->flen + ppos);
-      else
-        sqp->flen = sqp->flen - ppos;
+      //ppos gives us the shift to the left of the query
+      // One case:
+      //   ----X------- fread
+      // -X----         rread
+      // Another case:
+      //   ---X-        fread
+      // -X---          rread
+      // Another case:
+      //   ----         fread
+      // -X----X-       rread
+
+
+      //first calc rlen after the first clip
+      sqp->rlen -= ppos;
+
+      //now in the first two cases shown above, the other cut point is just the
+      //new rlen
+      if(sqp->rlen <= sqp->flen)
+        sqp->flen = sqp->rlen;
+      //otherwise leave sqp->flen alone
+      if(sqp->rlen > sqp->flen){
+        // Another case:
+        //   ----         fread
+        // -X----X---     rread
+        // make initial cut to rc read
+        sqp->rc_rqual[sqp->rlen - sqp->flen] = '\0';
+        sqp->rc_rseq[sqp->rlen - sqp->flen] = '\0';
+        strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
+        strcpy(sqp->rqual,sqp->rc_rqual);
+        rev_qual(sqp->rqual,sqp->rlen);
+        revcom_seq(sqp->rseq,sqp->rlen);
+
+        //now we have our end cut in place in the regular reads
+        sqp->rlen = sqp->flen;
+
+      }
+
+      //now cases have been handled and length has been determined
       sqp->fseq[sqp->flen] = '\0';
       sqp->fqual[sqp->flen] = '\0';
-      sqp->rlen = sqp->rlen - ppos;
       sqp->rseq[sqp->rlen] = '\0';
       sqp->rqual[sqp->rlen] = '\0';
       // now re-reverse complement the sequences
@@ -617,13 +649,13 @@ int compute_ol(
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
     subject_len = subjectLen - pos;
     //Round1:
-    //   ---------- Subj
+    //   ------     Subj
     //   ---------- Query
     //Round2:
-    //  ----------  Subj
+    //  ------      Subj
     //   ---------- Query
     //Round3:
-    // ----------   Subj
+    // ------       Subj
     //   ---------- Query
     //...
     if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
