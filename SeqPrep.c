@@ -26,10 +26,11 @@
 //gets hits to the reverse file only.
 #define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCG")
 #define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
+
 void help ( char *prog_name ) {
   fprintf(stderr, "\n\nUsage:\n%s [Required Args] [Options]\n",prog_name );
   fprintf(stderr, "NOTE 1: The output is always gziped compressed.\n");
-  fprintf(stderr, "NOTE 2: If the quality strings in the output contain characters less than ascii 33 on an ascii table, try running again with or without the -6 option.\n");
+  fprintf(stderr, "NOTE 2: If the quality strings in the output contain characters less than ascii 33 on an ascii table (they look like lines from a binary file), try running again with or without the -6 option.\n");
   fprintf(stderr, "Required Arguments:\n" );
   fprintf(stderr, "\t-f <first read input fastq filename>\n" );
   fprintf(stderr, "\t-r <second read input fastq filename>\n" );
@@ -47,6 +48,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
   fprintf(stderr, "\t-N <minimum fraction of matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
+  fprintf(stderr, "\t-g <print overhang when adapters are present and stripped (use this if reads are different length)>\n");
   fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
   fprintf(stderr, "\t-E <write pretty alignments to this file for visual Examination>\n" );
   fprintf(stderr, "\t-x <max number of pretty alignments to write (if -E provided); default = %d>\n", DEF_MAX_PRETTY_PRINT );
@@ -68,21 +70,21 @@ inline void update_spinner(unsigned long long num_reads){
   }else if (num_reads % SPIN_INTERVAL == 0){
     switch(spcount % 4){
     case 0:
-    fprintf(stderr,"\b/");
-    fflush(stderr);
-    break;
+      fprintf(stderr,"\b/");
+      fflush(stderr);
+      break;
     case 1:
-    fprintf(stderr,"\b-");
-    fflush(stderr);
-    break;
+      fprintf(stderr,"\b-");
+      fflush(stderr);
+      break;
     case 2:
-    fprintf(stderr,"\b\\");
-    fflush(stderr);
-    break;
+      fprintf(stderr,"\b\\");
+      fflush(stderr);
+      break;
     default:
-    fprintf(stderr,"\b|");
-    fflush(stderr);
-    break;
+      fprintf(stderr,"\b|");
+      fflush(stderr);
+      break;
     }
     spcount++;
   }
@@ -108,6 +110,7 @@ int main( int argc, char* argv[] ) {
   char reverse_out_fn[MAX_FN_LEN];
   char merged_out_fn[MAX_FN_LEN];
   bool do_read_merging = false;
+  bool print_overhang = false;
   char forward_primer[MAX_SEQ_LEN+1];
   strcpy(forward_primer, DEF_FORWARD_PRIMER); //set default
   char forward_primer_dummy_qual[MAX_SEQ_LEN+1];
@@ -140,83 +143,86 @@ int main( int argc, char* argv[] ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:n:6h" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:n:6gh" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
     case 'f' :
-    req_args ++;
-    strcpy( forward_fn, optarg );
-    break;
+      req_args ++;
+      strcpy( forward_fn, optarg );
+      break;
     case 'r' :
-    req_args ++;
-    strcpy( reverse_fn, optarg );
-    break;
+      req_args ++;
+      strcpy( reverse_fn, optarg );
+      break;
     case '1' :
-    req_args ++;
-    strcpy(forward_out_fn, optarg);
-    break;
+      req_args ++;
+      strcpy(forward_out_fn, optarg);
+      break;
     case '2' :
-    req_args ++;
-    strcpy(reverse_out_fn, optarg);
-    break;
+      req_args ++;
+      strcpy(reverse_out_fn, optarg);
+      break;
 
-    //OPTIONAL GENERAL ARGUMENTS
+      //OPTIONAL GENERAL ARGUMENTS
     case 'h' :
-    help(argv[0]);
-    break;
+      help(argv[0]);
+      break;
     case '6' :
-    p64 = true;
-    break;
+      p64 = true;
+      break;
     case 'q' :
-    qcut = atoi(optarg)+33;
-    break;
+      qcut = atoi(optarg)+33;
+      break;
     case 'L' :
-    min_read_len = atoi(optarg);
-    break;
+      min_read_len = atoi(optarg);
+      break;
 
-    //OPTIONAL ADAPTER/PRIMER TRIMMING ARGUMENTS
+      //OPTIONAL ADAPTER/PRIMER TRIMMING ARGUMENTS
     case 'A':
-    strcpy(forward_primer, optarg);
-    break;
+      strcpy(forward_primer, optarg);
+      break;
     case 'B':
-    strcpy(reverse_primer, optarg);
-    break;
+      strcpy(reverse_primer, optarg);
+      break;
     case 'O':
-    min_ol_adapter = atoi(optarg);
-    break;
+      min_ol_adapter = atoi(optarg);
+      break;
     case 'M':
-    max_mismatch_adapter_frac = atof(optarg);
-    break;
+      max_mismatch_adapter_frac = atof(optarg);
+      break;
     case 'N':
-    min_match_adapter_frac = atof(optarg);
-    break;
+      min_match_adapter_frac = atof(optarg);
+      break;
 
-    //OPTIONAL MERGING ARGUMENTS
+      //OPTIONAL MERGING ARGUMENTS
+    case 'g' :
+      print_overhang = true;
+      break;
     case 's' :
-    do_read_merging = true;
-    strcpy( merged_out_fn, optarg );
-    break;
+      do_read_merging = true;
+      strcpy( merged_out_fn, optarg );
+      break;
     case 'o':
-    min_ol_reads = atoi(optarg);
-    break;
+      min_ol_reads = atoi(optarg);
+      break;
     case 'm':
-    max_mismatch_reads_frac = atof(optarg);
-    break;
+      max_mismatch_reads_frac = atof(optarg);
+      break;
     case 'n':
-    min_match_reads_frac = atof(optarg);
-    break;
+      min_match_reads_frac = atof(optarg);
+      break;
     case 'E':
-    pretty_print = true;
-    strcpy(pretty_print_fn,optarg);
-    break;
+      pretty_print = true;
+      strcpy(pretty_print_fn,optarg);
+      break;
     case 'x':
-    max_pretty_print = atol(optarg);
-    break;
+      max_pretty_print = atol(optarg);
+      break;
 
 
     default :
-    help(argv[0]);
+      help(argv[0]);
     }
   }
   if(req_args < 4){
@@ -246,50 +252,38 @@ int main( int argc, char* argv[] ) {
     mfqw = fileOpen(merged_out_fn,"w");
   if(pretty_print)
     ppaw = fileOpen(pretty_print_fn,"w");
-  int fpos,rpos;
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
-    update_spinner(num_pairs);
-    num_pairs++;
+    update_spinner(num_pairs++);
 
-    fpos = compute_ol(sqp->fseq,sqp->fqual,sqp->flen,
+    if(adapter_trim(sqp, min_ol_adapter,
         forward_primer, forward_primer_dummy_qual, forward_primer_len,
-        min_ol_adapter, min_match_adapter, max_mismatch_adapter,
-        false, qcut);
-    rpos = compute_ol(sqp->rseq,sqp->rqual,sqp->rlen,
         reverse_primer, reverse_primer_dummy_qual, reverse_primer_len,
-        min_ol_adapter, min_match_adapter, max_mismatch_adapter,
-        false, qcut);
-    if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
-      //check if reads are long enough to do anything with.
+        min_match_adapter, max_mismatch_adapter,
+        min_match_reads, max_mismatch_reads,
+        qcut)){
+      //we trimmed the adapter!
       num_adapter++;
-      if((fpos < min_read_len) || (rpos < min_read_len)){
+      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
         num_discarded++;
         continue; //ignore these reads and move on.
       }
-
-      // trim adapters
-      sqp->fseq[fpos] = '\0';
-      sqp->fqual[fpos] = '\0';
-      sqp->flen = fpos;
-      sqp->rseq[rpos] = '\0';
-      sqp->rqual[rpos] = '\0';
-      sqp->rlen = rpos;
       if(!do_read_merging){ //just print
         write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
         write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
 
       }else{ //force merge
         num_merged++;
-        adapter_merge(sqp);
+        adapter_merge(sqp,print_overhang);
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
         if(pretty_print && num_pretty_print < max_pretty_print){
           num_pretty_print++;
           pretty_print_alignment(ppaw,sqp,qcut);
         }
       }
-      //we are done
+      //done with this read;
       continue;
     }
+
     //To be here we know that there isn't significant adapter overlap
     if(do_read_merging){
       if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){

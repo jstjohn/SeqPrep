@@ -94,6 +94,101 @@ void SQP_destroy(SQP sqp){
   free(sqp);
 }
 
+
+/**
+ * adapter_trim:
+ *
+ *
+ */
+bool adapter_trim(SQP sqp, size_t min_ol_adapter,
+    char *forward_primer, char *forward_primer_dummy_qual,
+    int forward_primer_len,
+    char *reverse_primer, char *reverse_primer_dummy_qual,
+    int reverse_primer_len,
+    unsigned short min_match_adapter[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
+    unsigned short min_match_reads[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
+    char qcut){
+  //adapters on reads if the insert size is less than the read length, the adapter
+  // appears at the end of the sequence.
+  int fpos = compute_ol(sqp->fseq,sqp->fqual,sqp->flen,
+      forward_primer, forward_primer_dummy_qual, forward_primer_len,
+      min_ol_adapter, min_match_adapter, max_mismatch_adapter,
+      false, qcut);
+  int rpos = compute_ol(sqp->rseq,sqp->rqual,sqp->rlen,
+      reverse_primer, reverse_primer_dummy_qual, reverse_primer_len,
+      min_ol_adapter, min_match_adapter, max_mismatch_adapter,
+      false, qcut);
+  if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
+    //check if reads are long enough to do anything with.
+    // trim adapters
+    sqp->fseq[fpos] = '\0';
+    sqp->fqual[fpos] = '\0';
+    sqp->flen = fpos;
+    sqp->rseq[rpos] = '\0';
+    sqp->rqual[rpos] = '\0';
+    sqp->rlen = rpos;
+    // now re-reverse complement the sequences
+    strcpy(sqp->rc_rseq,sqp->rseq);
+    strcpy(sqp->rc_rqual,sqp->rqual);
+    rev_qual(sqp->rc_rqual,sqp->rlen);
+    revcom_seq(sqp->rc_rseq,sqp->rlen);
+    //adapters present
+    return true;
+  }
+  ////////////
+  // Look at the adapter overhang
+  // Starting from our minimum adapter overlap
+  // check to see if there is total overlap with
+  //Round1:
+  //       ---------- Subj
+  //       ---------- Query
+  //Round2:
+  //      ----------  Subj
+  //     ----------   Query
+  //...
+  //we can get this effect by swapping the query and subj, and then have a high minimum
+  //overlap
+  char *queryseq= sqp->rc_rseq;
+  char *queryqual= sqp->rc_rqual;
+  char *subjseq= sqp->fseq;
+  char *subjqual= sqp->fqual;
+  int querylen = sqp->rlen;
+  int subjlen = sqp->flen;
+
+  int ppos = compute_ol(
+      queryseq, queryqual, querylen,
+      subjseq, subjqual, subjlen,
+      min(querylen,subjlen)-min_ol_adapter, min_match_reads, max_mismatch_reads,
+      true, qcut ); //pass true here so ambiguous matches are avoided
+  if(ppos != CODE_NOMATCH && ppos != CODE_AMBIGUOUS){
+    //we have a match, trim the adapter!
+    if(ppos == 0){
+      //no adapter
+      return false;
+    }else{
+      //trim ppos bases off beginning of query and end of subj
+      sqp->flen -= ppos;
+      sqp->fseq[sqp->flen] = '\0';
+      sqp->fqual[sqp->flen] = '\0';
+      sqp->rlen -= ppos;
+      sqp->rseq[sqp->rlen] = '\0';
+      sqp->rqual[sqp->rlen] = '\0';
+      // now re-reverse complement the sequences
+      strcpy(sqp->rc_rseq,sqp->rseq);
+      strcpy(sqp->rc_rqual,sqp->rqual);
+      rev_qual(sqp->rc_rqual,sqp->rlen);
+      revcom_seq(sqp->rc_rseq,sqp->rlen);
+      return true;
+    }
+  }
+  //no adapters
+  return false;
+}
+
+
+
 /**
  * read_merge:
  *    Computes the potential overlap between two reads,
@@ -108,11 +203,6 @@ bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
     unsigned short max_mismatch[MAX_SEQ_LEN+1],
     char adj_q_cut){
-  //first reverse complement reads
-  strcpy(sqp->rc_rseq,sqp->rseq);
-  strcpy(sqp->rc_rqual,sqp->rqual);
-  rev_qual(sqp->rc_rqual,sqp->rlen);
-  revcom_seq(sqp->rc_rseq,sqp->rlen);
   //now compute overlap
   int i;
 
@@ -123,22 +213,33 @@ bool read_merge(SQP sqp, size_t min_olap,
   int querylen = 0;
   int subjlen = 0;
   char c,q;
-  if(sqp->rlen <= sqp->flen){
-    subjseq = sqp->fseq;
-    subjqual = sqp->fqual;
-    queryseq = sqp->rc_rseq;
-    queryqual = sqp->rc_rqual;
-    querylen = sqp->rlen;
-    subjlen = sqp->flen;
-  }else{
-    queryseq = sqp->fseq;
-    queryqual = sqp->fqual;
-    subjseq = sqp->rc_rseq;
-    subjqual = sqp->rc_rqual;
-    subjlen = sqp->rlen;
-    querylen = sqp->flen;
-  }
-
+  //  if(sqp->rlen <= sqp->flen){
+  subjseq = sqp->fseq;
+  subjqual = sqp->fqual;
+  queryseq = sqp->rc_rseq;
+  queryqual = sqp->rc_rqual;
+  querylen = sqp->rlen;
+  subjlen = sqp->flen;
+  //  }else{
+  //    queryseq = sqp->fseq;
+  //    queryqual = sqp->fqual;
+  //    subjseq = sqp->rc_rseq;
+  //    subjqual = sqp->rc_rqual;
+  //    subjlen = sqp->rlen;
+  //    querylen = sqp->flen;
+  //  }
+  ////////////
+  // Now calculate the other cases
+  //Round1:
+  //   ---------- Subj
+  //   ---------- Query
+  //Round2:
+  //  ----------  Subj
+  //   ---------- Query
+  //Round3:
+  // ----------   Subj
+  //   ---------- Query
+  //...
   int mpos = compute_ol(
       subjseq, subjqual, subjlen,
       queryseq, queryqual, querylen,
@@ -187,12 +288,8 @@ bool read_merge(SQP sqp, size_t min_olap,
 }
 
 
-void adapter_merge(SQP sqp){
+void adapter_merge(SQP sqp, bool print_overhang){
   //first RC reverse read so we can do direct overlapping
-  strcpy(sqp->rc_rseq, sqp->rseq);
-  strcpy(sqp->rc_rqual, sqp->rqual);
-  revcom_seq(sqp->rc_rseq,sqp->rlen);
-  rev_qual(sqp->rc_rqual,sqp->rlen);
   int i = 0;
   int j = 0;
   char c,q;
@@ -258,10 +355,13 @@ void adapter_merge(SQP sqp){
     }//end for
     //now we have our best offset, use that and build our merged_sequence
     int pos = 0;
-    for(i=0;i<max_offset;i++){
-      sqp->merged_seq[pos] = subjseq[i];
-      sqp->merged_qual[pos] = subjqual[i];
-      pos++;
+
+    if(print_overhang){
+      for(i=0;i<max_offset;i++){
+        sqp->merged_seq[pos] = subjseq[i];
+        sqp->merged_qual[pos] = subjqual[i];
+        pos++;
+      }
     }
     //now do the part that overlaps
     for(i=max_offset;i<querylen+max_offset;i++){
@@ -281,10 +381,12 @@ void adapter_merge(SQP sqp){
       pos++;
     }
     //finish off the subject sequence
-    for(i=(querylen+max_offset); i<subjlen; i++){
-      sqp->merged_seq[pos] = subjseq[i];
-      sqp->merged_qual[pos] = subjqual[i];
-      pos++;
+    if(print_overhang){
+      for(i=(querylen+max_offset); i<subjlen; i++){
+        sqp->merged_seq[pos] = subjseq[i];
+        sqp->merged_qual[pos] = subjqual[i];
+        pos++;
+      }
     }
     sqp->merged_seq[pos]='\0';
     sqp->merged_qual[pos]='\0';
@@ -321,6 +423,10 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   if ( (frs == 1) &&
       (rrs == 1) &&
       f_r_id_check( curr_sqp->fid, id1len, curr_sqp->rid, id2len ) ) {
+    strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
+    strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
+    rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
+    revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
     return true;
   }
 
@@ -470,7 +576,11 @@ gzFile * fileOpen(const char *name, char access_mode[]) {
 }
 
 
-/* 
+
+
+
+
+/*
    Supply two sequences in the proper orientation for overlap
    Ie in this example give compute_ol the reversed sequence and quality
 
@@ -498,6 +608,16 @@ int compute_ol(
   int subject_len = subjectLen;
   for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
     subject_len = subjectLen - pos;
+    //Round1:
+    //   ---------- Subj
+    //   ---------- Query
+    //Round2:
+    //  ----------  Subj
+    //   ---------- Query
+    //Round3:
+    // ----------   Subj
+    //   ---------- Query
+    //...
     if ( k_match( &(subjectSeq[pos]), &(subjectQual[pos]),
         subject_len, querySeq, queryQual, queryLen,
         min_match[subject_len>queryLen?queryLen:subject_len],
@@ -578,46 +698,46 @@ inline char revcom_char(const char base) {
   static bool warned = false;
   switch (base) {
   case 'A':
-  return 'T';
+    return 'T';
   case 'a' :
-  return 't';
+    return 't';
 
   case 'C':
-  return 'G';
+    return 'G';
   case 'c' :
-  return 'g';
+    return 'g';
 
   case 'G':
-  return 'C';
+    return 'C';
   case 'g' :
-  return 'c';
+    return 'c';
 
   case 'T':
-  return 'A';
+    return 'A';
   case 't' :
-  return 'a';
+    return 'a';
 
- //ignore special characters
+    //ignore special characters
   case '-':
-  return '-';
+    return '-';
   case '.':
     return '.';
   case 'N':
-  return 'N';
+    return 'N';
   case 'n':
-  return 'n';
+    return 'n';
 
   case 'X':
-  return 'X';
+    return 'X';
   case 'x':
-  return 'x';
+    return 'x';
 
   default:
-  if(!warned){
-    warned = true;
-    fprintf( stderr, "WARNING: Non standard DNA character in sequence: \"%c\"\n", base);
-  }
-  return base;
+    if(!warned){
+      warned = true;
+      fprintf( stderr, "WARNING: Non standard DNA character in sequence: \"%c\"\n", base);
+    }
+    return base;
   }
 }
 
