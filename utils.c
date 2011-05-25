@@ -248,6 +248,8 @@ bool read_merge(SQP sqp, size_t min_olap,
     return false;
   }else{
     //part where subj is non-overlapping
+    // ---------
+    //  -----
     int pos = 0;
     for(i=0;i<mpos;i++){
       sqp->merged_seq[pos] = subjseq[i];
@@ -272,9 +274,9 @@ bool read_merge(SQP sqp, size_t min_olap,
       sqp->merged_qual[pos] = q;
       pos++;
     }
-    //part where query is non-overlapping
-    if(subjlen > querylen+mpos){ //subject is really long
-      for(i=end-mpos;i<subjlen;i++){
+    //now print either the subject or query that is remaining at the end.
+    if(subjlen >= querylen+mpos){ //subject is really long so it is overhanging
+      for(i=end;i<subjlen;i++){
         sqp->merged_seq[pos] = subjseq[i];
         sqp->merged_qual[pos] = subjqual[i];
         pos++;
