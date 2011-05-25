@@ -277,7 +277,7 @@ int main( int argc, char* argv[] ) {
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
         if(pretty_print && num_pretty_print < max_pretty_print){
           num_pretty_print++;
-          pretty_print_alignment(ppaw,sqp,qcut);
+          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
         }
       }
       //done with this read;
@@ -292,7 +292,7 @@ int main( int argc, char* argv[] ) {
         write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
         if(pretty_print && num_pretty_print < max_pretty_print){
           num_pretty_print++;
-          pretty_print_alignment(ppaw,sqp,qcut);
+          pretty_print_alignment(ppaw,sqp,qcut,false); //false b/c merged input in fixed order
         }
       }else{
         //no significant overlap so just write them

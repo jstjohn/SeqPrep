@@ -38,7 +38,7 @@ typedef struct sqp* SQP;
 SQP SQP_init();
 void SQP_destroy(SQP sqp);
 void adapter_merge(SQP sqp, bool print_overhang);
-void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut);
+void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort);
 inline char mismatch_p33_merge(char pA, char pB);
 inline char match_p33_merge(char pA, char pB);
 bool read_merge(SQP sqp, size_t min_olap,

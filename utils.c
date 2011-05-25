@@ -41,7 +41,7 @@ inline char match_p33_merge(char pA, char pB){
  * vertical bars represent matches of any type
  *
  */
-void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut){
+void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort){
   char *queryseq;
   char *queryqual;
   char *subjseq;
@@ -49,7 +49,7 @@ void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut){
   int querylen = 0;
   int subjlen = 0;
   int i;
-  if(sqp->flen >= sqp->rlen){
+  if((!sort) || (sqp->flen >= sqp->rlen)){
     subjseq = sqp->fseq;
     subjqual = sqp->fqual;
     queryseq = sqp->rc_rseq;
@@ -169,10 +169,13 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
       return false;
     }else{
       //trim ppos bases off beginning of query and end of subj
-      sqp->flen -= ppos;
+      if(sqp->rlen > sqp->flen)
+        sqp->flen = sqp->flen - max(0, sqp->rlen - sqp->flen + ppos);
+      else
+        sqp->flen = sqp->flen - ppos;
       sqp->fseq[sqp->flen] = '\0';
       sqp->fqual[sqp->flen] = '\0';
-      sqp->rlen -= ppos;
+      sqp->rlen = sqp->rlen - ppos;
       sqp->rseq[sqp->rlen] = '\0';
       sqp->rqual[sqp->rlen] = '\0';
       // now re-reverse complement the sequences
@@ -256,7 +259,8 @@ bool read_merge(SQP sqp, size_t min_olap,
       pos++;
     }
     //overlapping section
-    for(i=mpos;i<subjlen;i++){
+    int end = min(subjlen,querylen-mpos);
+    for(i=mpos;i<end ;i++){
       if(subjseq[i] == queryseq[i-mpos]){
         c = subjseq[i];
         q = match_p33_merge(subjqual[i],queryqual[i-mpos]);
