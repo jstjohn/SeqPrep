@@ -197,10 +197,6 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
  *    Computes the potential overlap between two reads,
  *    fills the merged_seq items in sqp
  *    return true if a merging was done, and false otherwise
- *
- *  WARNING: this function currently works by assuming that
- *  the second read is not a subset of the first read. This can be
- *  guarenteed if the second read is the same length as the first.
  */
 bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
@@ -259,7 +255,7 @@ bool read_merge(SQP sqp, size_t min_olap,
       pos++;
     }
     //overlapping section
-    int end = min(subjlen,querylen-mpos);
+    int end = min(subjlen,querylen+mpos);
     for(i=mpos;i<end ;i++){
       if(subjseq[i] == queryseq[i-mpos]){
         c = subjseq[i];
@@ -277,10 +273,18 @@ bool read_merge(SQP sqp, size_t min_olap,
       pos++;
     }
     //part where query is non-overlapping
-    for(i=subjlen-mpos;i<querylen;i++){
-      sqp->merged_seq[pos] = queryseq[i];
-      sqp->merged_qual[pos] = queryqual[i];
-      pos++;
+    if(subjlen > querylen+mpos){ //subject is really long
+      for(i=end-mpos;i<subjlen;i++){
+        sqp->merged_seq[pos] = subjseq[i];
+        sqp->merged_qual[pos] = subjqual[i];
+        pos++;
+      }
+    }else{ //normal case
+      for(i=end-mpos;i<querylen;i++){
+        sqp->merged_seq[pos] = queryseq[i];
+        sqp->merged_qual[pos] = queryqual[i];
+        pos++;
+      }
     }
     sqp->merged_len = pos;
     sqp->merged_seq[pos] = '\0';
@@ -432,9 +436,7 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
     rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
     revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
     return true;
-  }
-
-  else {
+  } else {
     return false;
   }
 }
