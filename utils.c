@@ -112,6 +112,39 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     char qcut){
   //adapters on reads if the insert size is less than the read length, the adapter
   // appears at the end of the sequence.
+
+
+  /**
+   * First check for adapter match before the first position of the read
+   */
+  int pfpos = compute_ol(
+      forward_primer, forward_primer_dummy_qual, forward_primer_len,
+      sqp->fseq,sqp->fqual,sqp->flen,
+      max(min(forward_primer_len,sqp->flen)-5,0), min_match_adapter, max_mismatch_adapter,
+      false, qcut);
+
+  int prpos = compute_ol(
+      reverse_primer, reverse_primer_dummy_qual, reverse_primer_len,
+      sqp->rseq,sqp->rqual,sqp->rlen,
+      max(min(reverse_primer_len,sqp->rlen)-5,0), min_match_adapter, max_mismatch_adapter,
+      false, qcut);
+
+  if(pfpos >= 0 || prpos >= 0){
+    //yikes, a match to the adapter at the first position!
+    sqp->fseq[0] = '\0';
+    sqp->fqual[0] = '\0';
+    sqp->flen = 0;
+    sqp->rseq[0] = '\0';
+    sqp->rqual[0] = '\0';
+    sqp->rlen = 0;
+    sqp->rc_rqual[0] = '\0';
+    sqp->rc_rseq[0] = '\0';
+    return true;
+  }
+
+  /**
+   * now check for the adapter after the first position of the read
+   */
   int fpos = compute_ol(sqp->fseq,sqp->fqual,sqp->flen,
       forward_primer, forward_primer_dummy_qual, forward_primer_len,
       min_ol_adapter, min_match_adapter, max_mismatch_adapter,
