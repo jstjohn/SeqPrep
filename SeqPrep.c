@@ -15,7 +15,7 @@
 #define DEF_MIN_MATCH_ADAPTER (0.7)
 #define DEF_MIN_MATCH_READS (0.75)
 #define DEF_MIN_READ_LEN (30)
-#define DEF_MAX_MISMATCH_ADAPTER (0.06)
+#define DEF_MAX_MISMATCH_ADAPTER (0.13)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
 //two revolutions of 4 positions = 5000 reads

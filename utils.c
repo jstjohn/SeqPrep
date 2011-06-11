@@ -737,7 +737,7 @@ bool k_match( const char* s1, const char* q1, size_t len1,
         (q2[i] >= adj_q_cut))){
       if (s1[i] != s2[i]) {
         mismatch++;
-        if(mismatch >=max_mismatch)
+        if(mismatch > max_mismatch)
           return false;
       }else{
         match++;
