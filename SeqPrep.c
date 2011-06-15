@@ -295,38 +295,38 @@ int main( int argc, char* argv[] ) {
     update_spinner(num_pairs++);
 
 
-//    //see if we can trim based on read-read overlap alone
-//    if(adapter_trim(sqp, min_ol_adapter,
-//        forward_primer, forward_primer_dummy_qual,
-//        forward_primer_len,
-//        reverse_primer, reverse_primer_dummy_qual,
-//        reverse_primer_len,
-//        min_match_adapter,
-//        max_mismatch_adapter,
-//        min_match_reads,
-//        max_mismatch_reads,
-//        qcut)){
-//      //we trimmed the adapter!
-//      num_adapter++;
-//      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
-//        num_discarded++;
-//        continue;
-//      }
-//      if(!do_read_merging){ //just print
-//        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-//        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
-//
-//      }else{ //force merge
-//        num_merged++;
-//        adapter_merge(sqp,false);
-//        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-//        if(pretty_print && num_pretty_print < max_pretty_print){
-//          num_pretty_print++;
-//          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
-//        }
-//      }
-//      continue;
-//    }
+    //    //see if we can trim based on read-read overlap alone
+    //    if(adapter_trim(sqp, min_ol_adapter,
+    //        forward_primer, forward_primer_dummy_qual,
+    //        forward_primer_len,
+    //        reverse_primer, reverse_primer_dummy_qual,
+    //        reverse_primer_len,
+    //        min_match_adapter,
+    //        max_mismatch_adapter,
+    //        min_match_reads,
+    //        max_mismatch_reads,
+    //        qcut)){
+    //      //we trimmed the adapter!
+    //      num_adapter++;
+    //      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
+    //        num_discarded++;
+    //        continue;
+    //      }
+    //      if(!do_read_merging){ //just print
+    //        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+    //        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+    //
+    //      }else{ //force merge
+    //        num_merged++;
+    //        adapter_merge(sqp,false);
+    //        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+    //        if(pretty_print && num_pretty_print < max_pretty_print){
+    //          num_pretty_print++;
+    //          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
+    //        }
+    //      }
+    //      continue;
+    //    }
 
 
 
@@ -342,17 +342,17 @@ int main( int argc, char* argv[] ) {
 
     //check for direct adapter match.
     if(adapter_trim(sqp, min_ol_adapter,
-                forward_primer, forward_primer_dummy_qual,
-                forward_primer_len,
-                reverse_primer, reverse_primer_dummy_qual,
-                reverse_primer_len,
-                min_match_adapter,
-                max_mismatch_adapter,
-                min_match_reads,
-                max_mismatch_reads,
-                qcut) ||
-                faaln->score >= adapter_thresh ||
-                raaln->score >= adapter_thresh){
+        forward_primer, forward_primer_dummy_qual,
+        forward_primer_len,
+        reverse_primer, reverse_primer_dummy_qual,
+        reverse_primer_len,
+        min_match_adapter,
+        max_mismatch_adapter,
+        min_match_reads,
+        max_mismatch_reads,
+        qcut) ||
+        faaln->score >= adapter_thresh ||
+        raaln->score >= adapter_thresh){
       num_adapter++; //adapter present
       //print it if user wants
       if(pretty_print && num_pretty_print < max_pretty_print){
@@ -377,9 +377,16 @@ int main( int argc, char* argv[] ) {
       if(raaln->score >= adapter_thresh){
         rpos = raaln->start1 - raaln->start2;
       }
-      rpos = min(rpos,min(fpos,sqp->rlen));
-      fpos = min(fpos,min(rpos,sqp->flen));
-
+      if(rpos == -MAX_SEQ_LEN && fpos == -MAX_SEQ_LEN){
+        rpos = fpos = min(sqp->rlen,sqp->flen);
+      }else if (rpos == -MAX_SEQ_LEN){
+        rpos = max(0,min(fpos,sqp->rlen));
+      }else if (fpos == -MAX_SEQ_LEN){
+        fpos = max(0,min(rpos,sqp->flen));
+      }else{
+        rpos = max(0,min(rpos,min(fpos,sqp->rlen)));
+        fpos = max(0,min(fpos,min(rpos,sqp->flen)));
+      }
 
       if(fpos < min_read_len || rpos < min_read_len){
         num_discarded++;
@@ -387,8 +394,8 @@ int main( int argc, char* argv[] ) {
       }else{ //trim the adapters
         sqp->fseq[fpos] = '\0';
         sqp->fqual[fpos] = '\0';
-        sqp->rseq[rpos] = '\0';
-        sqp->rqual[rpos] = '\0';
+        sqp->rc_rseq[rpos] = '\0';
+        sqp->rc_rqual[rpos] = '\0';
         sqp->flen = fpos;
         sqp->rlen = rpos;
         strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
