@@ -295,38 +295,38 @@ int main( int argc, char* argv[] ) {
     update_spinner(num_pairs++);
 
 
-    //see if we can trim based on read-read overlap alone
-    if(adapter_trim(sqp, min_ol_adapter,
-        forward_primer, forward_primer_dummy_qual,
-        forward_primer_len,
-        reverse_primer, reverse_primer_dummy_qual,
-        reverse_primer_len,
-        min_match_adapter,
-        max_mismatch_adapter,
-        min_match_reads,
-        max_mismatch_reads,
-        qcut)){
-      //we trimmed the adapter!
-      num_adapter++;
-      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
-        num_discarded++;
-        continue;
-      }
-      if(!do_read_merging){ //just print
-        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
-
-      }else{ //force merge
-        num_merged++;
-        adapter_merge(sqp,false);
-        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-        if(pretty_print && num_pretty_print < max_pretty_print){
-          num_pretty_print++;
-          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
-        }
-      }
-      continue;
-    }
+//    //see if we can trim based on read-read overlap alone
+//    if(adapter_trim(sqp, min_ol_adapter,
+//        forward_primer, forward_primer_dummy_qual,
+//        forward_primer_len,
+//        reverse_primer, reverse_primer_dummy_qual,
+//        reverse_primer_len,
+//        min_match_adapter,
+//        max_mismatch_adapter,
+//        min_match_reads,
+//        max_mismatch_reads,
+//        qcut)){
+//      //we trimmed the adapter!
+//      num_adapter++;
+//      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
+//        num_discarded++;
+//        continue;
+//      }
+//      if(!do_read_merging){ //just print
+//        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+//        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+//
+//      }else{ //force merge
+//        num_merged++;
+//        adapter_merge(sqp,false);
+//        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+//        if(pretty_print && num_pretty_print < max_pretty_print){
+//          num_pretty_print++;
+//          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
+//        }
+//      }
+//      continue;
+//    }
 
 
 
@@ -341,7 +341,18 @@ int main( int argc, char* argv[] ) {
         ALN_TYPE_LOCAL, adapter_thresh, sqp->rlen, reverse_primer_len);
 
     //check for direct adapter match.
-    if(faaln->score >= adapter_thresh || raaln->score >= adapter_thresh){
+    if(adapter_trim(sqp, min_ol_adapter,
+                forward_primer, forward_primer_dummy_qual,
+                forward_primer_len,
+                reverse_primer, reverse_primer_dummy_qual,
+                reverse_primer_len,
+                min_match_adapter,
+                max_mismatch_adapter,
+                min_match_reads,
+                max_mismatch_reads,
+                qcut) ||
+                faaln->score >= adapter_thresh ||
+                raaln->score >= adapter_thresh){
       num_adapter++; //adapter present
       //print it if user wants
       if(pretty_print && num_pretty_print < max_pretty_print){
@@ -366,13 +377,8 @@ int main( int argc, char* argv[] ) {
       if(raaln->score >= adapter_thresh){
         rpos = raaln->start1 - raaln->start2;
       }
-
-      if(rpos == -MAX_SEQ_LEN){
-        // so lets just assume that the adapter appears at the same position on the frag
-        rpos = min(fpos,sqp->rlen);
-      }if(fpos == -MAX_SEQ_LEN){
-        fpos = min(rpos,sqp->flen);
-      }
+      rpos = min(fpos,sqp->rlen);
+      fpos = min(rpos,sqp->flen);
 
 
       if(fpos < min_read_len || rpos < min_read_len){
