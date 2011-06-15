@@ -1,9 +1,9 @@
 CC=gcc
 CFLAGS=-c -Wall -Werror -O3
-#recommended options: -ffast-math -ftree-vectorize -march=core2 -mssse3
+#recommended options: -ffast-math -ftree-vectorize -march=core2 -mssse3 -O3
 COPTS=
 LDFLAGS=-lz -lm
-SOURCES=SeqPrep.c utils.c
+SOURCES=SeqPrep.c utils.c stdaln.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=SeqPrep
 
