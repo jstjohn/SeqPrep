@@ -377,8 +377,8 @@ int main( int argc, char* argv[] ) {
       if(raaln->score >= adapter_thresh){
         rpos = raaln->start1 - raaln->start2;
       }
-      rpos = min(fpos,sqp->rlen);
-      fpos = min(rpos,sqp->flen);
+      rpos = min(rpos,min(fpos,sqp->rlen));
+      fpos = min(fpos,min(rpos,sqp->flen));
 
 
       if(fpos < min_read_len || rpos < min_read_len){
