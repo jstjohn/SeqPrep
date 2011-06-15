@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <zlib.h>
+#include "stdaln.h"
 
 #define MAX_ID_LEN (256)
 #define MAX_FN_LEN (512)
@@ -38,9 +39,17 @@ typedef struct sqp* SQP;
 SQP SQP_init();
 void SQP_destroy(SQP sqp);
 void adapter_merge(SQP sqp, bool print_overhang);
+void fill_merged_sequence(SQP sqp, AlnAln *aln, bool include_overhang);
 void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort);
+void pretty_print_alignment_stdaln(gzFile out, SQP sqp, AlnAln *aln, bool first_adapter, bool second_adapter, bool print_merged);
 inline char mismatch_p33_merge(char pA, char pB);
 inline char match_p33_merge(char pA, char pB);
+bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
+    unsigned short min_match_adapter[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
+    unsigned short min_match_reads[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
+    char qcut);
 bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
     unsigned short max_mismatch[MAX_SEQ_LEN+1],

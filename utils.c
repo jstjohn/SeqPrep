@@ -1,9 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
-#include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include "stdaln.h"
 #include "utils.h"
+
 
 SQP SQP_init(){
   //allocate an SQP
@@ -21,6 +24,24 @@ inline char mismatch_p33_merge(char pA, char pB){
   }
 }
 
+bool isXDNA(char c){
+  //A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  *  X
+  switch(toupper(c)){
+  case 'A':
+  case 'C':
+  case 'G':
+  case 'T':
+  case 'N':
+  case 'X':
+  case 'R':
+  case 'W':
+  case '.':
+    return true;
+  default:
+    return false;
+  }
+}
+
 /**
  * Calculates the resulting phred 33 score given a match
  */
@@ -30,6 +51,29 @@ inline char match_p33_merge(char pA, char pB){
     return MAX_QUAL;
   return res;
 }
+
+
+void pretty_print_alignment_stdaln(gzFile out, SQP sqp, AlnAln *aln, bool first_adapter, bool second_adapter, bool print_merged){
+  if(!(first_adapter || second_adapter)){
+    gzprintf(out,"Read Alignment Score:%d, Suboptimal Score:%d\nID:%s\n",aln->score, aln->subo ,sqp->fid);
+    gzprintf(out,"READ1: %s\n",aln->out1);
+    gzprintf(out,"       %s\n",aln->outm);
+    gzprintf(out,"READ2: %s\n",aln->out2);
+    if(print_merged)
+      gzprintf(out,"MERGD: %s\n\n",sqp->merged_seq);
+    else
+      gzprintf(out,"\n");
+    return;
+  }else if(first_adapter){
+    gzprintf(out,"Adapter Alignment Score:%d, Suboptimal Score:%d\nID:%s\n",aln->score, aln->subo ,sqp->fid);
+  }else if(second_adapter){
+    gzprintf(out,"Adapter Alignment Score:%d, Suboptimal Score:%d\nID:%s\n",aln->score, aln->subo ,sqp->rid);
+  }
+  gzprintf(out,"READ: %s\n",aln->out1);
+  gzprintf(out,"      %s\n",aln->outm);
+  gzprintf(out,"ADPT: %s\n\n",aln->out2);
+}
+
 
 /**
  * Print the alignment in the pretty form:
@@ -87,6 +131,96 @@ void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort){
   gzprintf(out,"%s",queryseq);
   gzprintf(out,"\nMERG: %s\n\n",sqp->merged_seq);
 }
+
+void fill_merged_sequence(SQP sqp, AlnAln *aln, bool trim_overhang){
+  int len = strlen(aln->out1);
+  char *out1, *out2;
+  out1 = aln->out1;
+  out2 = aln->out2;
+  int i,p1,p2; //p1,2 store pointers to corresponding pos in original seqs
+  p1 = p2 = 0;
+  char c1,c2,q1,q2,t1,t2;
+  bool end_gaps;
+  bool begin_gaps = trim_overhang;
+  int j = 0;
+  int k;
+  for(i=0;i<len;i++){
+    c1 = toupper(out1[i]);
+    c2 = toupper(out2[i]);
+    q1 = sqp->fqual[p1];
+    q2 = sqp->rc_rqual[p2];
+    if(isXDNA(c1) && isXDNA(c2)){
+
+      //case 1 both are DNA, choose one with best score and subtract
+      if (begin_gaps) begin_gaps = false; //switch it off now that we have seen a match
+      if(c1 == c2){
+        sqp->merged_seq[j] = c1;
+        sqp->merged_qual[j] = q1+q2-33;
+      }else if(q2 > q1){
+        sqp->merged_seq[j] = c2;
+        sqp->merged_qual[j] = q2 - q2 + 33;
+      }else{
+        sqp->merged_seq[j] = c1;
+        sqp->merged_qual[j] = q1 - q2 + 33;
+      }
+      //increment both positions of the reads
+      p1++;
+      p2++;
+      j++;
+    }else if(isXDNA(c1)){
+      // c2 is a gap
+      if (!begin_gaps){
+        sqp->merged_seq[j] = c1;
+        sqp->merged_qual[j] = ((q1-33)>>1)+33; //divide score by 2
+        //now check to see if we are done:
+        if(trim_overhang){
+          end_gaps = true;
+          for(k=i;k<len;k++){
+            t2 = out2[k];
+            if(t2 != '-'){
+              end_gaps = false;
+              break;
+            }
+          }
+          if(end_gaps){
+            //everything after this is a gap
+            break;
+          }
+        }
+        j++;
+      }
+      //increment the first
+      p1++;
+    }else if(isXDNA(c2)){
+      //c1 is a gap
+      if(!begin_gaps){
+        sqp->merged_seq[j] = c2;
+        sqp->merged_qual[j] = ((q2-33)>>1)+33; //divide score by 2
+        if(trim_overhang){
+          end_gaps = true;
+          for(k=i;k<len;k++){
+            t1 = out1[k];
+            if(t1 != '-'){
+              end_gaps = false;
+              break;
+            }
+          }
+          if(end_gaps){
+            //everything after this is a gap
+            break;
+          }
+        }
+        j++;
+      }
+      //increment the second
+      p2++;
+    }
+  }
+  sqp->merged_seq[j] = '\0';
+  sqp->merged_qual[j] = '\0';
+  sqp->merged_len = j;
+}
+
 
 
 void SQP_destroy(SQP sqp){
@@ -170,6 +304,25 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     //adapters present
     return true;
   }
+
+  return read_olap_adapter_trim(sqp, min_ol_adapter,
+      min_match_adapter, max_mismatch_adapter,
+      min_match_reads, max_mismatch_reads,
+      qcut);
+}
+
+
+
+/**
+ * look for adapters by read overlap
+ *
+ */
+bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
+    unsigned short min_match_adapter[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
+    unsigned short min_match_reads[MAX_SEQ_LEN+1],
+    unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
+    char qcut){
   ////////////
   // Look at the adapter overhang
   // Starting from our minimum adapter overlap
@@ -251,10 +404,8 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
       return true;
     }
   }
-  //no adapters
   return false;
 }
-
 
 
 /**
