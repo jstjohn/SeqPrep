@@ -296,9 +296,16 @@ int main( int argc, char* argv[] ) {
 
 
     //see if we can trim based on read-read overlap alone
-    if(read_olap_adapter_trim(sqp, min_ol_adapter,
-        min_match_adapter, max_mismatch_adapter,
-        min_match_reads, max_mismatch_reads, qcut)){
+    if(adapter_trim(sqp, min_ol_adapter,
+        forward_primer, forward_primer_dummy_qual,
+        forward_primer_len,
+        reverse_primer, reverse_primer_dummy_qual,
+        reverse_primer_len,
+        min_match_adapter,
+        max_mismatch_adapter,
+        min_match_reads,
+        max_mismatch_reads,
+        qcut)){
       //we trimmed the adapter!
       num_adapter++;
       if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
