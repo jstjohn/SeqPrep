@@ -634,6 +634,21 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   size_t id2len = 0;
   /* Read the next fastq record from the forward and reverse
      pair of each */
+
+  //make sure everything is fresh...
+  memset(curr_sqp->fid,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->rid,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->fseq,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->rseq,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->rc_rseq,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->fqual,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->rqual,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->rc_rqual,'\0',MAX_SEQ_LEN);
+  curr_sqp->flen = curr_sqp->rlen = 0;
+
+
+  //
+
   frs = read_fastq( ffq, curr_sqp->fid, curr_sqp->fseq, 
       curr_sqp->fqual, &id1len, &(curr_sqp->flen), p64 );
   rrs = read_fastq( rfq, curr_sqp->rid, curr_sqp->rseq, 

@@ -422,6 +422,8 @@ int main( int argc, char* argv[] ) {
             pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
           }
           write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        }else{
+          num_discarded++;
         }
         goto CLEAN_ALL;
       }else{
@@ -437,29 +439,31 @@ int main( int argc, char* argv[] ) {
         goto CLEAN_ADAPTERS;
       }
       goto CLEAN_ADAPTERS;
-    }
+    }else{
+      //no adapters present
 
-    //check for strong read overlap to assist trimming ends of adapters from end of read
-    if(do_read_merging){
-      if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){
-        //print merged output
-        num_merged++;
-        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-        if(pretty_print && num_pretty_print < max_pretty_print){
-          num_pretty_print++;
-          pretty_print_alignment(ppaw,sqp,qcut,false); //false b/c merged input in fixed order
+      //check for strong read overlap to assist trimming ends of adapters from end of read
+      if(do_read_merging){
+        if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){
+          //print merged output
+          num_merged++;
+          write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+          if(pretty_print && num_pretty_print < max_pretty_print){
+            num_pretty_print++;
+            pretty_print_alignment(ppaw,sqp,qcut,false); //false b/c merged input in fixed order
+          }
+        }else{
+          //no significant overlap so just write them
+          write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+          write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }
-      }else{
-        //no significant overlap so just write them
+        //done
+        goto CLEAN_ADAPTERS;
+      }else{ //just write reads to output fastqs
         write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
         write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+        goto CLEAN_ADAPTERS;
       }
-      //done
-      goto CLEAN_ADAPTERS;
-    }else{ //just write reads to output fastqs
-      write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-      write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
-      goto CLEAN_ADAPTERS;
     }
 
 
