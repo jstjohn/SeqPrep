@@ -20,9 +20,16 @@
 -2 ./out/pe_bad_contam_trimmed_2.fastq.gz \
 -E ./info/alignments_trimmed.txt.gz
 
+prog=gzcat
+if [ !  -n "`hash gzcat`" ] 
+then
+	 prog=zcat
+else
 
-gzcat ./out/pe_bad_contam_trimmed_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_1.lenhist.txt
-gzcat ./out/pe_bad_contam_trimmed_2.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_2.lenhist.txt
-gzcat ./out/pe_bad_contam_merged_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_1.lenhist.txt
-gzcat ./out/pe_bad_contam_merged_2.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_2.lenhist.txt
-gzcat ./out/pe_bad_contam_merged_s.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_s.lenhist.txt
+	prog=gzcat
+fi
+$prog ./out/pe_bad_contam_trimmed_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_1.lenhist.txt
+$prog ./out/pe_bad_contam_trimmed_2.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_2.lenhist.txt
+$prog ./out/pe_bad_contam_merged_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_1.lenhist.txt
+$prog ./out/pe_bad_contam_merged_2.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_2.lenhist.txt
+$prog ./out/pe_bad_contam_merged_s.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_s.lenhist.txt
