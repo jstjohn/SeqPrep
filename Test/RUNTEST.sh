@@ -21,13 +21,6 @@
 -E ./info/alignments_trimmed.txt.gz
 
 prog=gzcat
-if [ !  -n "`hash gzcat`" ] 
-then
-	 prog=zcat
-else
-
-	prog=gzcat
-fi
 $prog ./out/pe_bad_contam_trimmed_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_1.lenhist.txt
 $prog ./out/pe_bad_contam_trimmed_2.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_2.lenhist.txt
 $prog ./out/pe_bad_contam_merged_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_merged_1.lenhist.txt
