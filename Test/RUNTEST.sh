@@ -18,7 +18,7 @@
 -B CAAGCAGAAGACGGCATACGAGA \
 -1 ./out/pe_bad_contam_trimmed_1.fastq.gz \
 -2 ./out/pe_bad_contam_trimmed_2.fastq.gz \
--E ./info/alignments_merged.txt.gz
+-E ./info/alignments_trimmed.txt.gz
 
 
 gzcat ./out/pe_bad_contam_trimmed_1.fastq.gz | python seqlens.py > ./info/pe_bad_contam_trimmed_1.lenhist.txt
