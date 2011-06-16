@@ -406,27 +406,22 @@ int main( int argc, char* argv[] ) {
         revcom_seq(sqp->rseq,sqp->rlen);
       }
 
+
+      //do a nice global alignment between two reads, and print consensus
+      //from now on we need to clean everythin
+      fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
+          ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
       //do we want read merging?
-      if(do_read_merging){
+      if(do_read_merging && fraln->score > read_thresh){
 
-        //do a nice global alignment between two reads, and print consensus
-        fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
-            ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
-
-        //there is some kind of alignment, so lets do the merge
-        if(fraln->score > read_thresh){
-          //write the merged sequence
-          fill_merged_sequence(sqp, fraln, true);
-          if(pretty_print && num_pretty_print < max_pretty_print){
-            num_pretty_print += 1;
-            pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
-          }
-          write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-        }else{
-          num_discarded++;
+        //write the merged sequence
+        fill_merged_sequence(sqp, fraln, true);
+        if(pretty_print && num_pretty_print < max_pretty_print){
+          num_pretty_print++;
+          pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
         }
-        goto CLEAN_ALL;
-      }else{
+        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+      }else if(fraln->score > read_thresh){
         // we know that the adapters are present, trimmed, and the resulting
         // read lengths are both long enough to print.
         // We also know that we aren't doing merging.
@@ -435,10 +430,10 @@ int main( int argc, char* argv[] ) {
         write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
 
 
-        //didn't do read alignment
-        goto CLEAN_ADAPTERS;
+      }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
+        num_discarded++;
       }
-      goto CLEAN_ADAPTERS;
+      goto CLEAN_ALL;
     }else{
       //no adapters present
 
