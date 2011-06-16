@@ -643,6 +643,8 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   memset(curr_sqp->rc_rseq,'\0',MAX_SEQ_LEN);
   memset(curr_sqp->fqual,'\0',MAX_SEQ_LEN);
   memset(curr_sqp->rqual,'\0',MAX_SEQ_LEN);
+  memset(curr_sqp->merged_seq,'\0',MAX_SEQ_LEN+MAX_SEQ_LEN);
+  memset(curr_sqp->merged_qual,'\0',MAX_SEQ_LEN+MAX_SEQ_LEN);
   memset(curr_sqp->rc_rqual,'\0',MAX_SEQ_LEN);
   curr_sqp->flen = curr_sqp->rlen = 0;
 
