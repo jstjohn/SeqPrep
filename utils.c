@@ -724,7 +724,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
     }
     else {
       c = toupper( c );
-      seq[i++] = c;
+      seq[i++] = (c=='.' ? 'N':c);
     }
     c = gzgetc( fastq );
   }

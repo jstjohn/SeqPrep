@@ -387,6 +387,8 @@ int main( int argc, char* argv[] ) {
         rpos = max(0,min(rpos,min(fpos,sqp->rlen)));
         fpos = max(0,min(fpos,min(rpos,sqp->flen)));
       }
+      sqp->rlen = rpos;
+      sqp->flen = fpos;
 
       if(fpos < min_read_len || rpos < min_read_len){
         num_discarded++;
