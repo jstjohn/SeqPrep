@@ -402,8 +402,8 @@ int main( int argc, char* argv[] ) {
         sqp->rlen = rpos;
         strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
         strcpy(sqp->rqual,sqp->rc_rqual);
-        rev_qual(sqp->rqual,sqp->rlen);
-        revcom_seq(sqp->rseq,sqp->rlen);
+        rev_qual(sqp->rqual);
+        revcom_seq(sqp->rseq);
       }
 
 

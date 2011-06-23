@@ -299,8 +299,8 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     // now re-reverse complement the sequences
     strcpy(sqp->rc_rseq,sqp->rseq);
     strcpy(sqp->rc_rqual,sqp->rqual);
-    rev_qual(sqp->rc_rqual,sqp->rlen);
-    revcom_seq(sqp->rc_rseq,sqp->rlen);
+    rev_qual(sqp->rc_rqual);
+    revcom_seq(sqp->rc_rseq);
     //adapters present
     return true;
   }
@@ -383,8 +383,8 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
         sqp->rc_rseq[sqp->rlen - sqp->flen] = '\0';
         strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
         strcpy(sqp->rqual,sqp->rc_rqual);
-        rev_qual(sqp->rqual,sqp->rlen);
-        revcom_seq(sqp->rseq,sqp->rlen);
+        rev_qual(sqp->rqual);
+        revcom_seq(sqp->rseq);
 
         //now we have our end cut in place in the regular reads
         sqp->rlen = sqp->flen;
@@ -399,8 +399,8 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
       // now re-reverse complement the sequences
       strcpy(sqp->rc_rseq,sqp->rseq);
       strcpy(sqp->rc_rqual,sqp->rqual);
-      rev_qual(sqp->rc_rqual,sqp->rlen);
-      revcom_seq(sqp->rc_rseq,sqp->rlen);
+      rev_qual(sqp->rc_rqual);
+      revcom_seq(sqp->rc_rseq);
       return true;
     }
   }
@@ -668,8 +668,8 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
       f_r_id_check( curr_sqp->fid, id1len, curr_sqp->rid, id2len ) ) {
     strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
     strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
-    rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
-    revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
+    rev_qual(curr_sqp->rc_rqual);
+    revcom_seq(curr_sqp->rc_rseq);
     return true;
   } else {
     return false;
@@ -918,7 +918,8 @@ bool k_match( const char* s1, const char* q1, size_t len1,
 }
 
 
-void revcom_seq( char seq[], int len ) {
+void revcom_seq( char seq[]) {
+  int len = strlen(seq);
   char tmp_base;
   int  i;
 
@@ -982,7 +983,8 @@ inline char revcom_char(const char base) {
   }
 }
 
-inline void rev_qual( char q[], int len ) {
+inline void rev_qual( char q[] ) {
+  int len = strlen(q);
   char tmp_q;
   int  i;
 

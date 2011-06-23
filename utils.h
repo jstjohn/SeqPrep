@@ -71,9 +71,9 @@ bool k_match( const char* s1, const char* q1, size_t len1,
     const char* s2, const char* q2, size_t len2,
     unsigned short min_match,
     unsigned short max_mismatch, char adj_q_cut);
-void revcom_seq( char seq[], int len );
+void revcom_seq( char seq[]);
 inline char revcom_char(const char base);
-inline void rev_qual( char q[], int len );
+inline void rev_qual( char q[] );
 bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     char *forward_primer, char *forward_primer_dummy_qual,
     int forward_primer_len,
