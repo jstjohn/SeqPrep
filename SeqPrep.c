@@ -420,14 +420,25 @@ int main( int argc, char* argv[] ) {
           num_pretty_print++;
           pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
         }
-        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        if(strlen(sqp->merged_seq) >= min_read_len && strlen(sqp->merged_qual) >= min_read_len)
+          write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        else{
+          num_discarded++;
+        }
       }else if(fraln->score > read_thresh){
         // we know that the adapters are present, trimmed, and the resulting
         // read lengths are both long enough to print.
         // We also know that we aren't doing merging.
         // Now we just need to print.
-        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+        if(strlen(sqp->fseq) >= min_read_len &&
+            strlen(sqp->fqual) >= min_read_len &&
+            strlen(sqp->rseq) >= min_read_len &&
+            strlen(sqp->rqual) >= min_read_len){
+          write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+          write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+        }else{
+          num_discarded++;
+        }
 
 
       }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
@@ -441,22 +452,42 @@ int main( int argc, char* argv[] ) {
       if(do_read_merging){
         if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){
           //print merged output
-          num_merged++;
-          write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-          if(pretty_print && num_pretty_print < max_pretty_print){
-            num_pretty_print++;
-            pretty_print_alignment(ppaw,sqp,qcut,false); //false b/c merged input in fixed order
+          if(strlen(sqp->merged_seq) >= min_read_len &&
+              strlen(sqp->merged_qual) >= min_read_len){
+            num_merged++;
+            write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+            if(pretty_print && num_pretty_print < max_pretty_print){
+              num_pretty_print++;
+              pretty_print_alignment(ppaw,sqp,qcut,false); //false b/c merged input in fixed order
+            }
+          }else{
+            num_discarded++;
           }
         }else{
           //no significant overlap so just write them
-          write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-          write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+          if(strlen(sqp->fseq) >= min_read_len &&
+              strlen(sqp->fqual) >= min_read_len &&
+              strlen(sqp->rseq) >= min_read_len &&
+              strlen(sqp->rqual) >= min_read_len){
+            write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+            write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+          }else{
+            num_discarded++;
+          }
+
         }
         //done
         goto CLEAN_ADAPTERS;
       }else{ //just write reads to output fastqs
-        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+        if(strlen(sqp->fseq) >= min_read_len &&
+            strlen(sqp->fqual) >= min_read_len &&
+            strlen(sqp->rseq) >= min_read_len &&
+            strlen(sqp->rqual) >= min_read_len){
+          write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
+          write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
+        }else{
+          num_discarded++;
+        }
         goto CLEAN_ADAPTERS;
       }
     }
