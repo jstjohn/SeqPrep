@@ -231,10 +231,10 @@ int main( int argc, char* argv[] ) {
     case 'o':
       min_ol_reads = atoi(optarg);
       break;
-    case 'm':
+    case 'n':
       max_mismatch_reads_frac = atof(optarg);
       break;
-    case 'n':
+    case 'm':
       min_match_reads_frac = atof(optarg);
       break;
     case 'E':
