@@ -61,8 +61,8 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-E <write pretty alignments to this file for visual Examination>\n" );
   fprintf(stderr, "\t-x <max number of pretty alignments to write (if -E provided); default = %d>\n", DEF_MAX_PRETTY_PRINT );
   fprintf(stderr, "\t-o <minimum overall base pair overlap to merge two reads; default = %d>\n", DEF_OL2MERGE_READS );
-  fprintf(stderr, "\t-m <minimum fraction of matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
-  fprintf(stderr, "\t-n <maximum fraction of good quality mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
+  fprintf(stderr, "\t-m <maximum fraction of good quality mismatching bases to overlap reads; default = %f>\n", DEF_MAX_MISMATCH_READS );
+  fprintf(stderr, "\t-n <minimum fraction of matching bases to overlap reads; default = %f>\n", DEF_MIN_MATCH_READS );
   fprintf(stderr, "\n");
   exit( 1 );
 }
@@ -231,10 +231,10 @@ int main( int argc, char* argv[] ) {
     case 'o':
       min_ol_reads = atoi(optarg);
       break;
-    case 'n':
+    case 'm':
       max_mismatch_reads_frac = atof(optarg);
       break;
-    case 'm':
+    case 'n':
       min_match_reads_frac = atof(optarg);
       break;
     case 'E':
