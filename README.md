@@ -70,6 +70,7 @@ Sequence Merge No Adapter Present:
 
 
 Sequence Merge Adapter Present, Easy Peezy Mode (same lengths):
+
     SUBJ: NGATATGATTCCCAATCTAAGCAAACTGTCATGGAAAC
            |||||||||||||||||||||||||||||||||||||
     QUER: GGATATGATTCCCAATCTAAGCAAACTGTCATGGAAAC
@@ -81,6 +82,7 @@ Sequence Merge Adapter Present, Easy Peezy Mode (same lengths):
 
 
 Sequence merge Adapter but lengths differ:
+
     SUBJ: AATTGATGGGTGCCCACCCACGGGCCAGACAAAATCATCTGGCAAGCTGGATGCAGCCTACAAGCTGTAAGATTGGA
           |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
     QUER: AATTGATGGGTGCCCACCCACGGGCCAGACAAAATCATCTGGCAAGCTGGATGCAGCCTACAAGCTGTA
