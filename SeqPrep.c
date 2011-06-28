@@ -13,13 +13,13 @@
 #define DEF_OL2MERGE_ADAPTER (10)
 #define DEF_OL2MERGE_READS (20)
 #define DEF_QCUT (10)
-#define DEF_MIN_MATCH_ADAPTER (0.7)
+#define DEF_MIN_MATCH_ADAPTER (0.6)
 #define DEF_MIN_MATCH_READS (0.75)
 #define DEF_MIN_READ_LEN (30)
-#define DEF_MAX_MISMATCH_ADAPTER (0.13)
+#define DEF_MAX_MISMATCH_ADAPTER (0.2)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
-#define DEF_ADAPTER_SCORE_THRES (18)
+#define DEF_ADAPTER_SCORE_THRES (24)
 #define DEF_READ_SCORE_THRES (-500)
 //two revolutions of 4 positions = 5000 reads
 #define SPIN_INTERVAL (1250)
@@ -107,8 +107,8 @@ int main( int argc, char* argv[] ) {
   unsigned long long num_too_ambiguous_to_merge;
   unsigned long long max_pretty_print = DEF_MAX_PRETTY_PRINT;
   unsigned long long num_pretty_print = 0;
-  unsigned int adapter_thresh = DEF_ADAPTER_SCORE_THRES;
-  unsigned int read_thresh = DEF_READ_SCORE_THRES;
+  int adapter_thresh = DEF_ADAPTER_SCORE_THRES;
+  int read_thresh = DEF_READ_SCORE_THRES;
   clock_t start, end;
   //init to 0
   num_pairs = num_merged = num_adapter = num_discarded = num_too_ambiguous_to_merge = 0;
@@ -412,6 +412,7 @@ int main( int argc, char* argv[] ) {
       fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
           ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
       //do we want read merging?
+
       if(do_read_merging && fraln->score > read_thresh){
 
         //write the merged sequence
