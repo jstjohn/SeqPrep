@@ -1,5 +1,6 @@
 SeqPrep is a program to merge paired end Illumina reads that are overlapping into a single longer read. It may also just be used for its adapter trimming feature without doing any paired end overlap. When an adapter sequence is present, that means that the two reads must overlap (in most cases) so they are forcefully merged. When reads do not have adapter sequence they must be treated with care when doing the merging, so a much more sensitive approach is taken. The default parameters were chosen with sensitivity in mind, so that they could be ran on libraries where very few reads are expected to overlap. It is always safest though to save the overlapping procedure for libraries where you have some prior knowledge that a significant portion of the reads will have some overlap. 
 
+As an additional precaution, I check for good read overlap once the adapters are trimmed. If the adapter is trimmed and the reads do not have a strong overlap score (right now set to at least 7/8 of the reads must overlap after the adapters are trimmed off) then the reads aren't printed or merged.
 
     Usage:
     ./SeqPrep [Required Args] [Options]
