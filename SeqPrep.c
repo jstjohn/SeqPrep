@@ -291,44 +291,11 @@ int main( int argc, char* argv[] ) {
 
 
 
-
+  /**
+   * Loop over all of the reads
+   */
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
     update_spinner(num_pairs++);
-
-
-    //    //see if we can trim based on read-read overlap alone
-    //    if(adapter_trim(sqp, min_ol_adapter,
-    //        forward_primer, forward_primer_dummy_qual,
-    //        forward_primer_len,
-    //        reverse_primer, reverse_primer_dummy_qual,
-    //        reverse_primer_len,
-    //        min_match_adapter,
-    //        max_mismatch_adapter,
-    //        min_match_reads,
-    //        max_mismatch_reads,
-    //        qcut)){
-    //      //we trimmed the adapter!
-    //      num_adapter++;
-    //      if((sqp->flen < min_read_len) || (sqp->rlen < min_read_len)){
-    //        num_discarded++;
-    //        continue;
-    //      }
-    //      if(!do_read_merging){ //just print
-    //        write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
-    //        write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
-    //
-    //      }else{ //force merge
-    //        num_merged++;
-    //        adapter_merge(sqp,false);
-    //        write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
-    //        if(pretty_print && num_pretty_print < max_pretty_print){
-    //          num_pretty_print++;
-    //          pretty_print_alignment(ppaw,sqp,qcut,true); //true b/c merged input sorted
-    //        }
-    //      }
-    //      continue;
-    //    }
-
 
 
 
@@ -383,9 +350,14 @@ int main( int argc, char* argv[] ) {
       }else if (fpos == -MAX_SEQ_LEN){
         fpos = max(0,min(rpos,sqp->flen));
       }else{
-        rpos = max(0,min(rpos,min(fpos,sqp->rlen)));
-        fpos = max(0,min(fpos,min(rpos,sqp->flen)));
+        rpos = max(0,min(rpos,sqp->rlen));
+        fpos = max(0,min(fpos,sqp->flen));
       }
+      //make them the minimum cut of the two
+      //this is a little redundant in some cases,
+      //but does what needs to be done.
+      rpos = fpos = max(0,min(rpos,fpos));
+
       sqp->rlen = rpos;
       sqp->flen = fpos;
 
@@ -399,23 +371,27 @@ int main( int argc, char* argv[] ) {
         sqp->rqual[rpos] = '\0';
         sqp->flen = fpos;
         sqp->rlen = rpos;
-        strcpy(sqp->rc_rseq,sqp->rseq); //move RC reads into reg place and reverse them
+        strcpy(sqp->rc_rseq,sqp->rseq); //move regular reads now trimmed into RC read's place
         strcpy(sqp->rc_rqual,sqp->rqual);
-        rev_qual(sqp->rc_rqual);
+        rev_qual(sqp->rc_rqual);        //amd re-reverse the RC reads
         revcom_seq(sqp->rc_rseq);
       }
 
 
       //do a nice global alignment between two reads, and print consensus
-      //from now on we need to clean everythin
       fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
           ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
-      //do we want read merging?
 
       //calculate the minimum score we are willing to accept to merge the reads
-      read_thresh = sqp->flen + sqp->rlen - ((float)sqp->flen/8.0 * (float)aln_param_rd2rd.gap_ext) - ((float)sqp->rlen/8.0 * (float)aln_param_rd2rd.gap_ext) - aln_param_rd2rd.gap_open*2 - aln_param_rd2rd.gap_end*2;
+      //basically this is saying that 7/8 of the read must overlap perfectly
+      read_thresh = sqp->flen + sqp->rlen -
+          ((float)sqp->flen/8.0 * (float)aln_param_rd2rd.gap_ext) -
+          ((float)sqp->rlen/8.0 * (float)aln_param_rd2rd.gap_ext) -
+          aln_param_rd2rd.gap_open*2 - aln_param_rd2rd.gap_end*2;
 
       if(do_read_merging && fraln->score > read_thresh){
+        //if we want read merging,
+        //and the alignment score is better than the threshold just calculated...
 
         //write the merged sequence
         fill_merged_sequence(sqp, fraln, true);
