@@ -19,7 +19,7 @@
 #define DEF_MAX_MISMATCH_ADAPTER (0.2)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
-#define DEF_ADAPTER_SCORE_THRES (24)
+#define DEF_ADAPTER_SCORE_THRES (28)
 #define DEF_READ_SCORE_THRES (-500)
 //two revolutions of 4 positions = 5000 reads
 #define SPIN_INTERVAL (1250)
@@ -27,9 +27,10 @@
 //http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
 //and I validated both with grep, the first gets hits to the forward file only and the second
 //gets hits to the reverse file only.
-#define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCG")
-#define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
-
+//#define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCG")
+//#define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
+#define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAG")
+#define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGT")
 void help ( char *prog_name ) {
   fprintf(stderr, "\n\nUsage:\n%s [Required Args] [Options]\n",prog_name );
   fprintf(stderr, "NOTE 1: The output is always gziped compressed.\n");
@@ -45,8 +46,8 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-q <Quality score cutoff for mismatches to be counted in overlap; default = %d>\n", DEF_QCUT );
   fprintf(stderr, "\t-L <Minimum length of a trimmed or merged read to print it; default = %d>\n", DEF_MIN_READ_LEN );
   fprintf(stderr, "Arguments for Adapter/Primer Trimming (Optional):\n" );
-  fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );
-  fprintf(stderr, "\t-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read\n\t\t (should validate by grepping a file); default = %s>\n", DEF_REVERSE_PRIMER );
+  fprintf(stderr, "\t-A <forward read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)\n\t\t (should validate by grepping a file); default = %s>\n", DEF_FORWARD_PRIMER );
+  fprintf(stderr, "\t-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)\n\t\t (should validate by grepping a file); default = %s>\n", DEF_REVERSE_PRIMER );
   fprintf(stderr, "\t-O <minimum overall base pair overlap with adapter sequence to trim; default = %d>\n", DEF_OL2MERGE_ADAPTER );
   fprintf(stderr, "\t-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = %f>\n", DEF_MAX_MISMATCH_ADAPTER );
   fprintf(stderr, "\t-N <minimum fraction of matching bases for primer/adapter overlap; default = %f>\n", DEF_MIN_MATCH_ADAPTER );
@@ -333,8 +334,6 @@ int main( int argc, char* argv[] ) {
 
     AlnAln *faaln, *raaln, *fraln;
 
-    read_thresh = sqp->flen + sqp->rlen - (sqp->flen/2 * aln_param_rd2rd.gap_ext) - (sqp->rlen/2 * aln_param_rd2rd.gap_ext) - aln_param_rd2rd.gap_open*2 - aln_param_rd2rd.gap_end*2;
-
     faaln = aln_stdaln_aux(sqp->fseq, forward_primer, &aln_param_nt2nt,
         ALN_TYPE_LOCAL, adapter_thresh , sqp->flen, forward_primer_len);
     raaln = aln_stdaln_aux(sqp->rseq, reverse_primer, &aln_param_nt2nt,
@@ -396,14 +395,14 @@ int main( int argc, char* argv[] ) {
       }else{ //trim the adapters
         sqp->fseq[fpos] = '\0';
         sqp->fqual[fpos] = '\0';
-        sqp->rc_rseq[rpos] = '\0';
-        sqp->rc_rqual[rpos] = '\0';
+        sqp->rseq[rpos] = '\0';
+        sqp->rqual[rpos] = '\0';
         sqp->flen = fpos;
         sqp->rlen = rpos;
-        strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
-        strcpy(sqp->rqual,sqp->rc_rqual);
-        rev_qual(sqp->rqual);
-        revcom_seq(sqp->rseq);
+        strcpy(sqp->rc_rseq,sqp->rseq); //move RC reads into reg place and reverse them
+        strcpy(sqp->rc_rqual,sqp->rqual);
+        rev_qual(sqp->rc_rqual);
+        revcom_seq(sqp->rc_rseq);
       }
 
 
@@ -412,6 +411,9 @@ int main( int argc, char* argv[] ) {
       fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
           ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
       //do we want read merging?
+
+      //calculate the minimum score we are willing to accept to merge the reads
+      read_thresh = sqp->flen + sqp->rlen - ((float)sqp->flen/8.0 * (float)aln_param_rd2rd.gap_ext) - ((float)sqp->rlen/8.0 * (float)aln_param_rd2rd.gap_ext) - aln_param_rd2rd.gap_open*2 - aln_param_rd2rd.gap_end*2;
 
       if(do_read_merging && fraln->score > read_thresh){
 
