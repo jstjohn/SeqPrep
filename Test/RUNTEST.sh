@@ -14,8 +14,8 @@
 ../SeqPrep -6 \
 -f ./data/multiplex_bad_contam_1.fq.gz \
 -r ./data/multiplex_bad_contam_2.fq.gz \
--A GATCGGAAGAGCACACGTCTGAACTCCAGTCAC \
--B CAAGCAGAAGACGGCATACGAGA \
+-A GATCGGAAGAGCACACGTCT \
+-B CAAGCAGAAGACGGCATACG \
 -1 ./out/pe_bad_contam_trimmed_1.fastq.gz \
 -2 ./out/pe_bad_contam_trimmed_2.fastq.gz \
 -E ./info/alignments_trimmed.txt.gz
