@@ -297,10 +297,10 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     sqp->rqual[rpos] = '\0';
     sqp->rlen = rpos;
     // now re-reverse complement the sequences
-    strcpy(sqp->rc_rseq,sqp->rseq);
-    strcpy(sqp->rc_rqual,sqp->rqual);
-    rev_qual(sqp->rc_rqual);
-    revcom_seq(sqp->rc_rseq);
+    strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1);
+    strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
+    rev_qual(sqp->rc_rqual, sqp->rlen);
+    revcom_seq(sqp->rc_rseq, sqp->rlen);
     //adapters present
     return true;
   }
@@ -374,17 +374,17 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
       if(sqp->rlen <= sqp->flen)
         sqp->flen = sqp->rlen;
       //otherwise leave sqp->flen alone
-      if(sqp->rlen > sqp->flen){
+      else if(sqp->rlen > sqp->flen){
         // Another case:
         //   ----         fread
         // -X----X---     rread
         // make initial cut to rc read
-        sqp->rc_rqual[sqp->rlen - sqp->flen] = '\0';
-        sqp->rc_rseq[sqp->rlen - sqp->flen] = '\0';
-        strcpy(sqp->rseq,sqp->rc_rseq); //move RC reads into reg place and reverse them
-        strcpy(sqp->rqual,sqp->rc_rqual);
-        rev_qual(sqp->rqual);
-        revcom_seq(sqp->rseq);
+        sqp->rc_rqual[ppos + sqp->flen] = '\0';
+        sqp->rc_rseq[ppos + sqp->flen] = '\0';
+        strncpy(sqp->rseq,sqp->rc_rseq,ppos + sqp->flen+1); //move RC reads into reg place and reverse them
+        strncpy(sqp->rqual,sqp->rc_rqual,ppos + sqp->flen+1);
+        rev_qual(sqp->rqual, ppos + sqp->flen);
+        revcom_seq(sqp->rseq, ppos + sqp->flen);
 
         //now we have our end cut in place in the regular reads
         sqp->rlen = sqp->flen;
@@ -397,10 +397,10 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
       sqp->rseq[sqp->rlen] = '\0';
       sqp->rqual[sqp->rlen] = '\0';
       // now re-reverse complement the sequences
-      strcpy(sqp->rc_rseq,sqp->rseq);
-      strcpy(sqp->rc_rqual,sqp->rqual);
-      rev_qual(sqp->rc_rqual);
-      revcom_seq(sqp->rc_rseq);
+      strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1);
+      strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
+      rev_qual(sqp->rc_rqual, sqp->rlen);
+      revcom_seq(sqp->rc_rseq, sqp->rlen);
       return true;
     }
   }
@@ -662,14 +662,13 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   //  revcom_seq(curr_sqp->rc_rseq,curr_sqp->rlen);
   //  rev_qual(curr_sqp->rc_rqual,curr_sqp->rlen);
 
-
   if ( (frs == 1) &&
       (rrs == 1) &&
       f_r_id_check( curr_sqp->fid, id1len, curr_sqp->rid, id2len ) ) {
-    strcpy(curr_sqp->rc_rseq,curr_sqp->rseq);
-    strcpy(curr_sqp->rc_rqual,curr_sqp->rqual);
-    rev_qual(curr_sqp->rc_rqual);
-    revcom_seq(curr_sqp->rc_rseq);
+    strncpy(curr_sqp->rc_rseq,curr_sqp->rseq,curr_sqp->rlen+1);
+    strncpy(curr_sqp->rc_rqual,curr_sqp->rqual,curr_sqp->rlen+1);
+    rev_qual(curr_sqp->rc_rqual, curr_sqp->rlen);
+    revcom_seq(curr_sqp->rc_rseq, curr_sqp->rlen);
     return true;
   } else {
     return false;
@@ -847,7 +846,7 @@ int compute_ol(
      on the forward sequence */
   int best_hit = CODE_NOMATCH;
   int subject_len = subjectLen;
-  for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
+  for( pos = 0; pos < subjectLen - min_olap + 4; pos++ ) {
     subject_len = subjectLen - pos;
     //Round1:
     //   ------     Subj
@@ -918,8 +917,8 @@ bool k_match( const char* s1, const char* q1, size_t len1,
 }
 
 
-void revcom_seq( char seq[]) {
-  int len = strlen(seq);
+void revcom_seq( char seq[], int len) {
+  //int len = strlen(seq);
   char tmp_base;
   int  i;
 
@@ -983,8 +982,8 @@ inline char revcom_char(const char base) {
   }
 }
 
-inline void rev_qual( char q[] ) {
-  int len = strlen(q);
+inline void rev_qual( char q[], int len ) {
+  //int len = strlen(q);
   char tmp_q;
   int  i;
 

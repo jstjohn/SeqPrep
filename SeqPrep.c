@@ -298,7 +298,6 @@ int main( int argc, char* argv[] ) {
     update_spinner(num_pairs++);
 
 
-
     AlnAln *faaln, *raaln, *fraln;
 
     faaln = aln_stdaln_aux(sqp->fseq, forward_primer, &aln_param_nt2nt,
@@ -336,45 +335,37 @@ int main( int argc, char* argv[] ) {
       //do stuff to it
       //assume full length adapter and squish it down to the read with no gaps
       int rpos,fpos;
-      rpos = fpos = -MAX_SEQ_LEN;
+      rpos = fpos = (- MAX_SEQ_LEN);
       if(faaln->score >= adapter_thresh){
-        fpos = faaln->start1 - faaln->start2;
+        fpos = max(faaln->start1 - faaln->start2,0);
       }
       if(raaln->score >= adapter_thresh){
-        rpos = raaln->start1 - raaln->start2;
+        rpos = max(raaln->start1 - raaln->start2,0);
       }
-      if(rpos == -MAX_SEQ_LEN && fpos == -MAX_SEQ_LEN){
-        rpos = fpos = min(sqp->rlen,sqp->flen);
-      }else if (rpos == -MAX_SEQ_LEN){
-        rpos = max(0,min(fpos,sqp->rlen));
-      }else if (fpos == -MAX_SEQ_LEN){
-        fpos = max(0,min(rpos,sqp->flen));
-      }else{
-        rpos = max(0,min(rpos,sqp->rlen));
-        fpos = max(0,min(fpos,sqp->flen));
+
+      //make rlen the minimum of the two adapter search methods
+      if(rpos >= 0){
+        sqp->rlen = min(sqp->rlen,rpos);
       }
-      //make them the minimum cut of the two
-      //this is a little redundant in some cases,
-      //but does what needs to be done.
-      rpos = fpos = max(0,min(rpos,fpos));
 
-      sqp->rlen = rpos;
-      sqp->flen = fpos;
+      //make flen the minimum of the two adapter search methods
+      if(fpos >= 0){
+        sqp->flen = min(sqp->flen,fpos);
+      }
 
-      if(fpos < min_read_len || rpos < min_read_len){
+
+      if(sqp->flen < min_read_len || sqp->rlen < min_read_len){
         num_discarded++;
         goto CLEAN_ADAPTERS;
       }else{ //trim the adapters
-        sqp->fseq[fpos] = '\0';
-        sqp->fqual[fpos] = '\0';
-        sqp->rseq[rpos] = '\0';
-        sqp->rqual[rpos] = '\0';
-        sqp->flen = fpos;
-        sqp->rlen = rpos;
-        strcpy(sqp->rc_rseq,sqp->rseq); //move regular reads now trimmed into RC read's place
-        strcpy(sqp->rc_rqual,sqp->rqual);
-        rev_qual(sqp->rc_rqual);        //amd re-reverse the RC reads
-        revcom_seq(sqp->rc_rseq);
+        sqp->fseq[sqp->flen] = '\0';
+        sqp->fqual[sqp->flen] = '\0';
+        sqp->rseq[sqp->rlen] = '\0';
+        sqp->rqual[sqp->rlen] = '\0';
+        strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1); //move regular reads now trimmed into RC read's place
+        strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
+        rev_qual(sqp->rc_rqual, sqp->rlen);        //amd re-reverse the RC reads
+        revcom_seq(sqp->rc_rseq, sqp->rlen);
       }
 
 
@@ -399,8 +390,10 @@ int main( int argc, char* argv[] ) {
           num_pretty_print++;
           pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
         }
-        if(strlen(sqp->merged_seq) >= min_read_len && strlen(sqp->merged_qual) >= min_read_len)
+        if(strlen(sqp->merged_seq) >= min_read_len && strlen(sqp->merged_qual) >= min_read_len){
+          num_merged++;
           write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
+        }
         else{
           num_discarded++;
         }
@@ -423,10 +416,8 @@ int main( int argc, char* argv[] ) {
       }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
         num_discarded++;
       }
-      goto CLEAN_ALL;
     }else{
       //no adapters present
-
       //check for strong read overlap to assist trimming ends of adapters from end of read
       if(do_read_merging){
         if(read_merge(sqp, min_ol_reads, min_match_reads, max_mismatch_reads, qcut)){
@@ -479,8 +470,6 @@ int main( int argc, char* argv[] ) {
      * however in some cases there will be an additional alignment between the two reads. We can do
      * good cleanup in this case with gotos
      */
-
-    CLEAN_ALL:
     aln_free_AlnAln(fraln);
 
     CLEAN_ADAPTERS:
