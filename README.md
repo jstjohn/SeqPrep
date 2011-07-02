@@ -3,7 +3,7 @@ SeqPrep is a program to merge paired end Illumina reads that are overlapping int
 As an additional precaution, I check for good read overlap once the adapters are trimmed. If the adapter is trimmed and the reads do not have a strong overlap score (right now set to at least 7/8 of the reads must overlap after the adapters are trimmed off) then the reads aren't printed or merged.
 
     Usage:
-    ./SeqPrep [Required Args] [Options]
+    ../../SeqPrep [Required Args] [Options]
     NOTE 1: The output is always gziped compressed.
     NOTE 2: If the quality strings in the output contain characters less than ascii 33 on an ascii table (they look like lines from a binary file), try running again with or without the -6 option.
     Required Arguments:
@@ -17,18 +17,18 @@ As an additional precaution, I check for good read overlap once the adapters are
     	-q <Quality score cutoff for mismatches to be counted in overlap; default = 10>
     	-L <Minimum length of a trimmed or merged read to print it; default = 30>
     Arguments for Adapter/Primer Trimming (Optional):
-    	-A <forward read primer/adapter sequence to trim as it would appear at the end of a read
-    		 (should validate by grepping a file); default = AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCG>
-    	-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read
-    		 (should validate by grepping a file); default = AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT>
+    	-A <forward read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)
+    		 (should validate by grepping a file); default (genomic non-multiplexed adapter1) = AGATCGGAAGAGCGGTTCAG>
+    	-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)
+    		 (should validate by grepping a file); default (genomic non-multiplexed adapter2) = AGATCGGAAGAGCGTCGTGT>
     	-O <minimum overall base pair overlap with adapter sequence to trim; default = 10>
-    	-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = 0.130000>
-    	-N <minimum fraction of matching bases for primer/adapter overlap; default = 0.700000>
+    	-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = 0.200000>
+    	-N <minimum fraction of matching bases for primer/adapter overlap; default = 0.600000>
     	-b <adapter alignment band-width; default = 75>
     	-Q <adapter alignment gap-open; default = 8>
     	-t <adapter alignment gap-extension; default = 2>
     	-e <adapter alignment gap-end; default = 2>
-    	-Z <adapter local alignment cutoff score ((2*num_matches) - (gap_open*num_gaps) - (gap_close*num_gaps) - (gap_ext*gap_len)) ; default = 18>
+    	-Z <adapter local alignment cutoff score ((2*num_matches) - (gap_open*num_gaps) - (gap_close*num_gaps) - (gap_ext*gap_len)) ; default = 28>
     Optional Arguments for Merging:
     	-g <print overhang when adapters are present and stripped (use this if reads are different length)>
     	-s <perform merging and output the merged reads to this file>
@@ -37,7 +37,7 @@ As an additional precaution, I check for good read overlap once the adapters are
     	-o <minimum overall base pair overlap to merge two reads; default = 20>
     	-m <maximum fraction of good quality mismatching bases to overlap reads; default = 0.020000>
     	-n <minimum fraction of matching bases to overlap reads; default = 0.750000>
-
+    
 
 My current strategy to deal with ambiguous alignments to low complexity regions is as follows:
 
