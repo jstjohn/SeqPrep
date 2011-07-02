@@ -797,6 +797,7 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   }
 
   if ( c == EOF ) {
+    fprintf(stderr,"\nWarning: Your last read may have been discarded because you are missing a new line at the end of the file.\n\n");
     return 0;
   }
   return 1;
