@@ -44,6 +44,7 @@ void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort);
 void pretty_print_alignment_stdaln(gzFile out, SQP sqp, AlnAln *aln, bool first_adapter, bool second_adapter, bool print_merged);
 inline char mismatch_p33_merge(char pA, char pB);
 inline char match_p33_merge(char pA, char pB);
+void make_blunt_ends(SQP sqp, AlnAln *aln);
 bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
     unsigned short min_match_adapter[MAX_SEQ_LEN+1],
     unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],

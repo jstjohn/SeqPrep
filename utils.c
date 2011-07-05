@@ -132,6 +132,112 @@ void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort){
   gzprintf(out,"\nMERG: %s\n\n",sqp->merged_seq);
 }
 
+/**
+ * After performing overlap post adapter trimming,
+ *  this trims the ends of the reads the same way as when
+ *  they are merged, but otherwise leaves the nucleotides
+ *  the same as they were.
+ */
+void make_blunt_ends(SQP sqp, AlnAln *aln){
+  int len = strlen(aln->out1);
+  char *out1, *out2;
+  out1 = aln->out1;
+  out2 = aln->out2;
+  int i,p1,p2; //p1,2 store pointers to corresponding pos in original seqs
+  p1 = p2 = 0;
+  char c1,c2,q1,q2,t1,t2;
+  bool trim_overhang = true;
+  bool end_gaps;
+  bool begin_gaps = trim_overhang;
+  int j = 0;
+  int k;
+  for(i=0;i<len;i++){
+    c1 = toupper(out1[i]);
+    c2 = toupper(out2[i]);
+    q1 = sqp->fqual[p1];
+    q2 = sqp->rc_rqual[p2];
+    if(isXDNA(c1) && isXDNA(c2)){
+
+      sqp->fseq[j] = c1;
+      sqp->fqual[j] = q1;
+      sqp->rc_rseq[j] = c2;
+      sqp->rc_rqual[j] = q2;
+
+
+      //case 1 both are DNA, choose one with best score and subtract
+      if (begin_gaps) begin_gaps = false; //switch it off now that we have seen a match
+
+
+      //increment both positions of the reads
+      p1++;
+      p2++;
+      j++;
+    }else if(isXDNA(c1)){
+      // c2 is a gap
+      if (!begin_gaps){
+        sqp->fseq[j] = c1;
+        sqp->fqual[j] = q1;
+        //now check to see if we are done:
+        if(trim_overhang){
+          end_gaps = true;
+          for(k=i;k<len;k++){
+            t2 = out2[k];
+            if(t2 != '-'){
+              end_gaps = false;
+              break;
+            }
+          }
+          if(end_gaps){
+            //everything after this is a gap
+            break;
+          }
+        }
+        j++;
+      }
+      //increment the first
+      p1++;
+    }else if(isXDNA(c2)){
+      //c1 is a gap
+      if(!begin_gaps){
+        sqp->rc_rseq[j] = c2;
+        sqp->rc_rqual[j] = q2;
+        if(trim_overhang){
+          end_gaps = true;
+          for(k=i;k<len;k++){
+            t1 = out1[k];
+            if(t1 != '-'){
+              end_gaps = false;
+              break;
+            }
+          }
+          if(end_gaps){
+            //everything after this is a gap
+            break;
+          }
+        }
+        j++;
+      }
+      //increment the second
+      p2++;
+    }
+  }
+
+  sqp->fseq[j] = '\0';
+  sqp->fqual[j] = '\0';
+  sqp->flen = j;
+  sqp->rc_rseq[j] = '\0';
+  sqp->rc_rqual[j] = '\0';
+  sqp->rlen = j;
+  strncpy(sqp->rseq,sqp->rc_rseq,sqp->rlen+1);
+  strncpy(sqp->rqual,sqp->rc_rqual,sqp->rlen+1);
+  rev_qual( sqp->rqual, sqp->rlen );
+  revcom_seq( sqp->rseq, sqp->rlen);
+
+}
+
+
+
+
 void fill_merged_sequence(SQP sqp, AlnAln *aln, bool trim_overhang){
   int len = strlen(aln->out1);
   char *out1, *out2;

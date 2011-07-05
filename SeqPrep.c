@@ -230,11 +230,11 @@ int main( int argc, char* argv[] ) {
       break;
 
 
-//      fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
-//      fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
-//      fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
-//      fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
-//      fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
+      //      fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
+      //      fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
+      //      fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
+      //      fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
+      //      fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
 
     case 'w':
       aln_param_rd2rd.band_width = atoi(optarg);
@@ -442,10 +442,26 @@ int main( int argc, char* argv[] ) {
           num_pretty_print++;
           pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
         }
+
+
+
+
+        //do end polishing to take care of examples like the following:
+        //          Read Alignment Score:59, Suboptimal Score:-85
+        //          ID:HWI-ST593:1:1101:14566:7002#ACA/1
+        //          READ1: ------------ATACAACTCGCTGACTTTGTCCTGGCATTTGACATATGCCTCGTAGTCTGCAAAGACTTTAAACCGGTCATGGTGGAACAGCATGTTGA
+        //                             ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+        //          READ2: CTCTTCCGATCTATACAACTCGCTGACTTTGTCCTGGCATTTGACATATGCCTCGTAGTCTGCAAAGACTTTAAACCGGTCATGGTGGAACAGCATGTTG-
+
+
+
+        make_blunt_ends(sqp,fraln);
+
         if(strlen(sqp->fseq) >= min_read_len &&
             strlen(sqp->fqual) >= min_read_len &&
             strlen(sqp->rseq) >= min_read_len &&
             strlen(sqp->rqual) >= min_read_len){
+
           write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
