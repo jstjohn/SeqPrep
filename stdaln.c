@@ -225,8 +225,11 @@ int aln_sm_blast[] = {
 
 AlnParam aln_param_blast   = {  5,  2,  2, aln_sm_blast, 5, 50 };
 AlnParam aln_param_bwa     = { 26,  9,  5, aln_sm_maq, 5, 50 };
-AlnParam aln_param_nt2nt   = {  8,  2,  2, aln_sm_nt, 16, 75 };
-AlnParam aln_param_rd2rd   = {  1, 19, 19, aln_sm_read, 16, 75 };
+//AlnParam aln_param_nt2nt   = {  8,  2,  2, aln_sm_nt, 16, 75 };
+AlnParam aln_param_nt2nt   = {  8,  2,  2, aln_sm_nt, 16, 50 };
+//AlnParam aln_param_rd2rd   = {  1, 19, 19, aln_sm_read, 16, 75 };
+AlnParam aln_param_rd2rd   = {  26, 9, 5, aln_sm_read, 16, 50 };
+// open, ext, end, matrix, nrow, binwidth
 AlnParam aln_param_aa2aa   = { 10,  2,  2, aln_sm_blosum62, 22, 50 };
 
 AlnAln *aln_init_AlnAln()

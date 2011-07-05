@@ -21,6 +21,7 @@
 #define DEF_MAX_PRETTY_PRINT (10000)
 #define DEF_ADAPTER_SCORE_THRES (28)
 #define DEF_READ_SCORE_THRES (-500)
+#define DEF_READ_GAP_FRAC_CUTOFF (0.125)
 //two revolutions of 4 positions = 5000 reads
 #define SPIN_INTERVAL (1250)
 //following primer sequences are from:
@@ -55,7 +56,11 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-Q <adapter alignment gap-open; default = %d>\n", aln_param_nt2nt.gap_open );
   fprintf(stderr, "\t-t <adapter alignment gap-extension; default = %d>\n", aln_param_nt2nt.gap_ext );
   fprintf(stderr, "\t-e <adapter alignment gap-end; default = %d>\n", aln_param_nt2nt.gap_end );
-  fprintf(stderr, "\t-Z <adapter local alignment cutoff score ((2*num_matches) - (gap_open*num_gaps) - (gap_close*num_gaps) - (gap_ext*gap_len)) ; default = %d>\n", DEF_ADAPTER_SCORE_THRES );
+  fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
+  fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
+  fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
+  fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
+  fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
   fprintf(stderr, "\t-g <print overhang when adapters are present and stripped (use this if reads are different length)>\n");
   fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
@@ -141,6 +146,8 @@ int main( int argc, char* argv[] ) {
   float min_match_reads_frac = DEF_MIN_MATCH_READS;
   float max_mismatch_adapter_frac = DEF_MAX_MISMATCH_ADAPTER;
   float max_mismatch_reads_frac = DEF_MAX_MISMATCH_READS;
+
+  float read_frac_thresh = DEF_READ_GAP_FRAC_CUTOFF;
   unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1];
   unsigned short max_mismatch_reads[MAX_SEQ_LEN+1];
   unsigned short min_match_adapter[MAX_SEQ_LEN+1];
@@ -154,7 +161,7 @@ int main( int argc, char* argv[] ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:b:Q:t:e:Z:n:6gh" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -219,6 +226,29 @@ int main( int argc, char* argv[] ) {
       break;
     case 'Z':
       adapter_thresh = atoi(optarg);
+      break;
+
+
+//      fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
+//      fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
+//      fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
+//      fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
+//      fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
+
+    case 'w':
+      aln_param_rd2rd.band_width = atoi(optarg);
+      break;
+    case 'W':
+      aln_param_rd2rd.gap_open = atoi(optarg);
+      break;
+    case 'p':
+      aln_param_rd2rd.gap_ext = atoi(optarg);
+      break;
+    case 'P':
+      aln_param_rd2rd.gap_end = atoi(optarg);
+      break;
+    case 'X':
+      read_frac_thresh = atof(optarg);
       break;
 
       //OPTIONAL MERGING ARGUMENTS
@@ -375,10 +405,15 @@ int main( int argc, char* argv[] ) {
 
       //calculate the minimum score we are willing to accept to merge the reads
       //basically this is saying that 7/8 of the read must overlap perfectly
-      read_thresh = sqp->flen + sqp->rlen -
-          ((float)sqp->flen/8.0 * (float)aln_param_rd2rd.gap_ext) -
-          ((float)sqp->rlen/8.0 * (float)aln_param_rd2rd.gap_ext) -
-          aln_param_rd2rd.gap_open*2 - aln_param_rd2rd.gap_end*2;
+
+      read_thresh = (((int)sqp->flen) + ((int)sqp->rlen)) -
+          (((int)sqp->flen) * read_frac_thresh * aln_param_rd2rd.gap_ext) -
+          (((int)sqp->rlen) * read_frac_thresh * aln_param_rd2rd.gap_ext) -
+          (aln_param_rd2rd.gap_open*2) - (aln_param_rd2rd.gap_end*2);
+      //now lets put something useful in the alignment suboptimal score thing since right now it
+      //is just left blank:
+      //fprintf(stderr, "rt:%d\tfl:%d\trl:%d\trft:%f\tgx:%d\tgo:%d\tge%d\n", read_thresh,((int)sqp->flen),((int)sqp->rlen),read_frac_thresh,aln_param_rd2rd.gap_ext,aln_param_rd2rd.gap_open,aln_param_rd2rd.gap_end);
+      fraln->subo = read_thresh;
 
       if(do_read_merging && fraln->score > read_thresh){
         //if we want read merging,

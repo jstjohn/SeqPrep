@@ -290,12 +290,16 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
   if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
     //check if reads are long enough to do anything with.
     // trim adapters
-    sqp->fseq[fpos] = '\0';
-    sqp->fqual[fpos] = '\0';
-    sqp->flen = fpos;
-    sqp->rseq[rpos] = '\0';
-    sqp->rqual[rpos] = '\0';
-    sqp->rlen = rpos;
+    if(fpos >=0){
+      sqp->fseq[fpos] = '\0';
+      sqp->fqual[fpos] = '\0';
+      sqp->flen = fpos;
+    }
+    if(rpos >= 0){
+      sqp->rseq[rpos] = '\0';
+      sqp->rqual[rpos] = '\0';
+      sqp->rlen = rpos;
+    }
     // now re-reverse complement the sequences
     strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1);
     strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
