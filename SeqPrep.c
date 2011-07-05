@@ -19,7 +19,7 @@
 #define DEF_MAX_MISMATCH_ADAPTER (0.2)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
-#define DEF_ADAPTER_SCORE_THRES (28)
+#define DEF_ADAPTER_SCORE_THRES (18)
 #define DEF_READ_SCORE_THRES (-500)
 #define DEF_READ_GAP_FRAC_CUTOFF (0.125)
 //two revolutions of 4 positions = 5000 reads
