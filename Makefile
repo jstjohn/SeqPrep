@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -Wall -Werror -O3
+CFLAGS=-c -Wall -Werror -O2
 #recommended options: -ffast-math -ftree-vectorize -march=core2 -mssse3 -O3
 COPTS=
 LDFLAGS=-lz -lm
