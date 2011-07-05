@@ -402,6 +402,10 @@ int main( int argc, char* argv[] ) {
         // read lengths are both long enough to print.
         // We also know that we aren't doing merging.
         // Now we just need to print.
+        if(pretty_print && num_pretty_print < max_pretty_print){
+          num_pretty_print++;
+          pretty_print_alignment_stdaln(ppaw,sqp,fraln,false,false,true);
+        }
         if(strlen(sqp->fseq) >= min_read_len &&
             strlen(sqp->fqual) >= min_read_len &&
             strlen(sqp->rseq) >= min_read_len &&
