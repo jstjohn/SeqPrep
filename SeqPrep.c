@@ -56,6 +56,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-Q <adapter alignment gap-open; default = %d>\n", aln_param_nt2nt.gap_open );
   fprintf(stderr, "\t-t <adapter alignment gap-extension; default = %d>\n", aln_param_nt2nt.gap_ext );
   fprintf(stderr, "\t-e <adapter alignment gap-end; default = %d>\n", aln_param_nt2nt.gap_end );
+  fprintf(stderr, "\t-Z <adapter alignment minimum local alignment score cutoff [roughly (2*num_hits) - (num_gaps*gap_open) - (num_gaps*gap_close) - (gap_len*gap_extend) - (2*num_mismatches)]; default = %d>\n", DEF_ADAPTER_SCORE_THRES );
   fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
   fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
   fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
