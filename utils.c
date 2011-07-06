@@ -456,7 +456,7 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
   int ppos = compute_ol(
       queryseq, queryqual, querylen,
       subjseq, subjqual, subjlen,
-      min(querylen,subjlen)-min_ol_adapter, min_match_reads, max_mismatch_reads,
+      min(querylen,subjlen)-min_ol_adapter-4, min_match_reads, max_mismatch_reads,
       true, qcut ); //pass true here so ambiguous matches are avoided
   if(ppos != CODE_NOMATCH && ppos != CODE_AMBIGUOUS){
     //we have a match, trim the adapter!
@@ -957,7 +957,7 @@ int compute_ol(
      on the forward sequence */
   int best_hit = CODE_NOMATCH;
   int subject_len = subjectLen;
-  for( pos = 0; pos < subjectLen - min_olap + 4; pos++ ) {
+  for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
     subject_len = subjectLen - pos;
     //Round1:
     //   ------     Subj
