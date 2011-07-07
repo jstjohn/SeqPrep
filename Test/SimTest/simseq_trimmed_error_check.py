@@ -54,33 +54,33 @@ max_len = 100
 
 for (pid,truelen) in sizes.iteritems():
 	outlen = outsizes[pid]
-	if truelen >= min_len:
-		if truelen < outlen:
-			TP += max_len - outlen #trimmed difference between outlen and orilen
-			FP += 0 #didn't trim any genomic bases
-			TN += truelen #left length genomic bases
-			FN += outlen - truelen #difference is adapter
-		if outlen == truelen:
-			TP += max_len - outlen
-			FP += 0
-			TN += truelen
-			FN += 0
-		if truelen > outlen:
-			TP += max_len - min(max_len, truelen) #trimmed adapter
-			FP += min(max_len,truelen) - outlen
-			TN += outlen
-			FN += 0 #since the true length is > outlength there is no adapter left behind
-	else:
-		if outlen > 0:
-			FP += 0 # trimmed genomic bases
-			FN += outlen - truelen # left adapter behind
-			TN += 0 # left genomic bases behind
-			TP += max_len - outlen # trimmed adapter
-		if outlen == 0:
-			FP += 0 # trimmed genomic bases
-			FN += 0 # left adapter behind
-			TN += 0 # left genomic bases behind
-			TP += max_len - truelen # trimmed adapter
+	## if truelen >= min_len:
+	if truelen < outlen:
+		TP += max_len - outlen #trimmed difference between outlen and orilen
+		FP += 0 #didn't trim any genomic bases
+		TN += truelen #left length genomic bases
+		FN += outlen - truelen #difference is adapter
+	if outlen == truelen:
+		TP += max_len - outlen
+		FP += 0
+		TN += truelen
+		FN += 0 #got all adapter
+	if truelen > outlen:
+		TP += max_len - min(max_len, truelen) #trimmed all of adapter
+		FP += min(max_len,truelen) - outlen #trimmed the difference of genomic
+		TN += outlen #didnt trim outlen genomic bases
+		FN += 0 #since the true length is > outlength there is no adapter left behind
+	## else:
+	## 	if outlen > 0:
+	## 		FP += 0 # trimmed genomic bases
+	## 		FN += max(outlen - truelen,0) # left adapter behind
+	## 		TN += 0 # left genomic bases behind
+	## 		TP += max_len - outlen # trimmed adapter
+	## 	if outlen == 0:
+	## 		FP += 0 # trimmed genomic bases
+	## 		FN += 0 # left adapter behind
+	## 		TN += 0 # left genomic bases behind
+	## 		TP += max_len - truelen # trimmed adapter
 		
 			
 			
