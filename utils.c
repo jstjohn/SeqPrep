@@ -149,7 +149,8 @@ void make_blunt_ends(SQP sqp, AlnAln *aln){
   bool trim_overhang = true;
   bool end_gaps;
   bool begin_gaps = trim_overhang;
-  int j = 0;
+  int j1 = 0;
+  int j2 = 0;
   int k;
   for(i=0;i<len;i++){
     c1 = toupper(out1[i]);
@@ -158,10 +159,10 @@ void make_blunt_ends(SQP sqp, AlnAln *aln){
     q2 = sqp->rc_rqual[p2];
     if(isXDNA(c1) && isXDNA(c2)){
 
-      sqp->fseq[j] = c1;
-      sqp->fqual[j] = q1;
-      sqp->rc_rseq[j] = c2;
-      sqp->rc_rqual[j] = q2;
+      sqp->fseq[j1] = c1;
+      sqp->fqual[j1] = q1;
+      sqp->rc_rseq[j2] = c2;
+      sqp->rc_rqual[j2] = q2;
 
 
       //case 1 both are DNA, choose one with best score and subtract
@@ -171,12 +172,13 @@ void make_blunt_ends(SQP sqp, AlnAln *aln){
       //increment both positions of the reads
       p1++;
       p2++;
-      j++;
+      j1++;
+      j2++;
     }else if(isXDNA(c1)){
       // c2 is a gap
       if (!begin_gaps){
-        sqp->fseq[j] = c1;
-        sqp->fqual[j] = q1;
+        sqp->fseq[j1] = c1;
+        sqp->fqual[j1] = q1;
         //now check to see if we are done:
         if(trim_overhang){
           end_gaps = true;
@@ -192,15 +194,15 @@ void make_blunt_ends(SQP sqp, AlnAln *aln){
             break;
           }
         }
-        j++;
+        j1++;
       }
       //increment the first
       p1++;
     }else if(isXDNA(c2)){
       //c1 is a gap
       if(!begin_gaps){
-        sqp->rc_rseq[j] = c2;
-        sqp->rc_rqual[j] = q2;
+        sqp->rc_rseq[j2] = c2;
+        sqp->rc_rqual[j2] = q2;
         if(trim_overhang){
           end_gaps = true;
           for(k=i;k<len;k++){
@@ -215,19 +217,19 @@ void make_blunt_ends(SQP sqp, AlnAln *aln){
             break;
           }
         }
-        j++;
+        j2++;
       }
       //increment the second
       p2++;
     }
   }
 
-  sqp->fseq[j] = '\0';
-  sqp->fqual[j] = '\0';
-  sqp->flen = j;
-  sqp->rc_rseq[j] = '\0';
-  sqp->rc_rqual[j] = '\0';
-  sqp->rlen = j;
+  sqp->fseq[j1] = '\0';
+  sqp->fqual[j1] = '\0';
+  sqp->flen = j1;
+  sqp->rc_rseq[j2] = '\0';
+  sqp->rc_rqual[j2] = '\0';
+  sqp->rlen = j2;
   strncpy(sqp->rseq,sqp->rc_rseq,sqp->rlen+1);
   strncpy(sqp->rqual,sqp->rc_rqual,sqp->rlen+1);
   rev_qual( sqp->rqual, sqp->rlen );
@@ -456,7 +458,9 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
   int ppos = compute_ol(
       queryseq, queryqual, querylen,
       subjseq, subjqual, subjlen,
-      min(querylen,subjlen)-min_ol_adapter-4, min_match_reads, max_mismatch_reads,
+      //min(subjlen,min(min_ol_adapter,querylen)),
+      max(0,min(querylen,subjlen)-min_ol_adapter-1),
+      min_match_reads, max_mismatch_reads,
       true, qcut ); //pass true here so ambiguous matches are avoided
   if(ppos != CODE_NOMATCH && ppos != CODE_AMBIGUOUS){
     //we have a match, trim the adapter!
@@ -1010,7 +1014,7 @@ bool k_match( const char* s1, const char* q1, size_t len1,
   size_t mismatch = 0;
   size_t match = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
-    //if we have a match, or at least bad quality bases...
+    //if we have a match, or at least good quality bases...
     if ( s1[i] == s2[i] || ((q1[i] >= adj_q_cut) &&
         (q2[i] >= adj_q_cut))){
       if (s1[i] != s2[i]) {

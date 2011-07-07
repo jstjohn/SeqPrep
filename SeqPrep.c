@@ -11,17 +11,17 @@
 #include "stdaln.h"
 
 #define DEF_OL2MERGE_ADAPTER (10)
-#define DEF_OL2MERGE_READS (20)
-#define DEF_QCUT (10)
-#define DEF_MIN_MATCH_ADAPTER (0.85)
-#define DEF_MIN_MATCH_READS (0.85)
+#define DEF_OL2MERGE_READS (15)
+#define DEF_QCUT (5)
+#define DEF_MIN_MATCH_ADAPTER (0.8)
+#define DEF_MIN_MATCH_READS (0.95)
 #define DEF_MIN_READ_LEN (30)
-#define DEF_MAX_MISMATCH_ADAPTER (0.1)
+#define DEF_MAX_MISMATCH_ADAPTER (0.08)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
-#define DEF_ADAPTER_SCORE_THRES (18)
+#define DEF_ADAPTER_SCORE_THRES (26)
 #define DEF_READ_SCORE_THRES (-500)
-#define DEF_READ_GAP_FRAC_CUTOFF (0.125)
+#define DEF_READ_GAP_FRAC_CUTOFF (0.5)
 //two revolutions of 4 positions = 5000 reads
 #define SPIN_INTERVAL (1250)
 //following primer sequences are from:
@@ -229,12 +229,6 @@ int main( int argc, char* argv[] ) {
       adapter_thresh = atoi(optarg);
       break;
 
-
-      //      fprintf(stderr, "\t-w <read alignment band-width; default = %d>\n", aln_param_rd2rd.band_width );
-      //      fprintf(stderr, "\t-W <read alignment gap-open; default = %d>\n", aln_param_rd2rd.gap_open );
-      //      fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
-      //      fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
-      //      fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
 
     case 'w':
       aln_param_rd2rd.band_width = atoi(optarg);
