@@ -5,7 +5,7 @@
 -f ./data/multiplex_bad_contam_1.fq.gz \
 -r ./data/multiplex_bad_contam_2.fq.gz \
 -A GATCGGAAGAGCACACGTCT \
--B CAAGCAGAAGACGGCATACG \
+-B AGATCGGAAGAGCGTCGT \
 -1 ./out/pe_bad_contam_merged_1.fastq.gz \
 -2 ./out/pe_bad_contam_merged_2.fastq.gz \
 -s ./out/pe_bad_contam_merged_s.fastq.gz \
@@ -15,7 +15,7 @@
 -f ./data/multiplex_bad_contam_1.fq.gz \
 -r ./data/multiplex_bad_contam_2.fq.gz \
 -A GATCGGAAGAGCACACGTCT \
--B CAAGCAGAAGACGGCATACG \
+-B AGATCGGAAGAGCGTCGT \
 -1 ./out/pe_bad_contam_trimmed_1.fastq.gz \
 -2 ./out/pe_bad_contam_trimmed_2.fastq.gz \
 -E ./info/alignments_trimmed.txt.gz
