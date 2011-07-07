@@ -25,7 +25,7 @@ See `Test/README.md` for some information on testing out other parameters. `Test
     General Arguments (Optional):
     	-h Display this help message and exit (also works with no args) 
     	-6 Input sequence is in phred+64 rather than phred+33 format, the output will still be phred+33 
-    	-q <Quality score cutoff for mismatches to be counted in overlap; default = 5>
+    	-q <Quality score cutoff for mismatches to be counted in overlap; default = 13>
     	-L <Minimum length of a trimmed or merged read to print it; default = 30>
     Arguments for Adapter/Primer Trimming (Optional):
     	-A <forward read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)
@@ -34,7 +34,7 @@ See `Test/README.md` for some information on testing out other parameters. `Test
     		 (should validate by grepping a file); default (genomic non-multiplexed adapter2) = AGATCGGAAGAGCGTCGTGT>
     	-O <minimum overall base pair overlap with adapter sequence to trim; default = 10>
     	-M <maximum fraction of good quality mismatching bases for primer/adapter overlap; default = 0.080000>
-    	-N <minimum fraction of matching bases for primer/adapter overlap; default = 0.800000>
+    	-N <minimum fraction of matching bases for primer/adapter overlap; default = 0.750000>
     	-b <adapter alignment band-width; default = 50>
     	-Q <adapter alignment gap-open; default = 8>
     	-t <adapter alignment gap-extension; default = 2>
@@ -52,8 +52,7 @@ See `Test/README.md` for some information on testing out other parameters. `Test
     	-x <max number of pretty alignments to write (if -E provided); default = 10000>
     	-o <minimum overall base pair overlap to merge two reads; default = 15>
     	-m <maximum fraction of good quality mismatching bases to overlap reads; default = 0.020000>
-    	-n <minimum fraction of matching bases to overlap reads; default = 0.950000>
-
+    	-n <minimum fraction of matching bases to overlap reads; default = 0.800000>
 
 
 My current strategy to deal with ambiguous alignments to low complexity regions is as follows:
@@ -72,7 +71,7 @@ Since doing that many floating point multiplications seems like a bad idea, I ju
 
 Finally I have a parameter you can set which specifies a minimum resulting read length after adapter trimming and/or merging so that ultra short trimmed reads aren't output.
 
-Following are results from hand testing the three main merge cases. Now to generate similar output automatically just supply the `-E readable_alignment.txt.gz` argument to the program (the output is gzip compressed into the file name specified).
+Following are results from hand testing the three main merge cases. Now to generate similar output automatically just supply the `-E readable_alignment.txt.gz` argument to the program (the output is gzip compressed into the file name specified). 
 
 
 Sequence Merge No Adapter Present:
@@ -110,3 +109,10 @@ Sequence merge Adapter but lengths differ:
     QUER: GDDBBFBGGFBHFIEDGGGBDGGG<GGDDG@IIIEIHDIHGIIIDDGDGDFDIFIHGIDEGGGDIIIGI
     RESU: SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSB4725:E>
 
+
+If interested there is a website where I post my tests of different parameters for SeqPrep on simulated data. There are also a few comparison stats of different programs to trim adapters. The website can be accessed here:
+http://hgwdev.cse.ucsc.edu/~jstjohn/seqprep/
+
+where the pages are named `result(date).html`. The latest ones (as of when I have gotten around to edit this) can be found here:
+
+http://hgwdev.cse.ucsc.edu/~jstjohn/seqprep/results2011-07-07.html
