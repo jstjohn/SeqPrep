@@ -21,7 +21,7 @@
 #define DEF_MAX_PRETTY_PRINT (10000)
 #define DEF_ADAPTER_SCORE_THRES (26)
 #define DEF_READ_SCORE_THRES (-500)
-#define DEF_READ_GAP_FRAC_CUTOFF (0.5)
+#define DEF_READ_GAP_FRAC_CUTOFF (0.125)
 //two revolutions of 4 positions = 5000 reads
 #define SPIN_INTERVAL (1250)
 //following primer sequences are from:
