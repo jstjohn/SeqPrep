@@ -35,7 +35,7 @@ See `Test/README.md` for some information on testing out other parameters. `Test
     	-W <read alignment gap-open; default = 26>
     	-p <read alignment gap-extension; default = 9>
     	-P <read alignment gap-end; default = 5>
-    	-X <read alignment maximum fraction gap cutoff; default = 0.500000>
+    	-X <read alignment maximum fraction gap cutoff; default = 0.125000>
     Optional Arguments for Merging:
     	-g <print overhang when adapters are present and stripped (use this if reads are different length)>
     	-s <perform merging and output the merged reads to this file>
@@ -44,6 +44,7 @@ See `Test/README.md` for some information on testing out other parameters. `Test
     	-o <minimum overall base pair overlap to merge two reads; default = 15>
     	-m <maximum fraction of good quality mismatching bases to overlap reads; default = 0.020000>
     	-n <minimum fraction of matching bases to overlap reads; default = 0.950000>
+
 
 
 My current strategy to deal with ambiguous alignments to low complexity regions is as follows:
