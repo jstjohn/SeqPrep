@@ -13,14 +13,15 @@ SQP SQP_init(){
   return (SQP) malloc(sizeof(Sqp));
 }
 
+
 /**
  * Calculates the resulting phred 33 score given a mismatch
  */
 inline char mismatch_p33_merge(char pA, char pB){
   if(pA > pB){
-    return pA-(pB-33);
+    return min(pA-(pB-33),maximum_quality);
   }else{
-    return pB-(pA-33);
+    return min(pB-(pA-33),maximum_quality);
   }
 }
 
@@ -47,9 +48,11 @@ bool isXDNA(char c){
  */
 inline char match_p33_merge(char pA, char pB){
   char res = pA+(pB-33);
-  if(res > MAX_QUAL)
-    return MAX_QUAL;
-  return res;
+  return min(res,maximum_quality);
+}
+
+inline char gap_p33_qual(char q){
+  return min(((q-33)>>1)+33,maximum_quality);
 }
 
 
@@ -263,13 +266,13 @@ void fill_merged_sequence(SQP sqp, AlnAln *aln, bool trim_overhang){
       if (begin_gaps) begin_gaps = false; //switch it off now that we have seen a match
       if(c1 == c2){
         sqp->merged_seq[j] = c1;
-        sqp->merged_qual[j] = q1+q2-33;
+        sqp->merged_qual[j] = match_p33_merge(q1,q2);
       }else if(q2 > q1){
         sqp->merged_seq[j] = c2;
-        sqp->merged_qual[j] = q2 - q2 + 33;
+        sqp->merged_qual[j] = mismatch_p33_merge(q2,q1);
       }else{
         sqp->merged_seq[j] = c1;
-        sqp->merged_qual[j] = q1 - q2 + 33;
+        sqp->merged_qual[j] = mismatch_p33_merge(q1,q2);
       }
       //increment both positions of the reads
       p1++;
@@ -279,7 +282,7 @@ void fill_merged_sequence(SQP sqp, AlnAln *aln, bool trim_overhang){
       // c2 is a gap
       if (!begin_gaps){
         sqp->merged_seq[j] = c1;
-        sqp->merged_qual[j] = ((q1-33)>>1)+33; //divide score by 2
+        sqp->merged_qual[j] = gap_p33_qual(q1); //divide score by 2
         //now check to see if we are done:
         if(trim_overhang){
           end_gaps = true;
@@ -303,7 +306,7 @@ void fill_merged_sequence(SQP sqp, AlnAln *aln, bool trim_overhang){
       //c1 is a gap
       if(!begin_gaps){
         sqp->merged_seq[j] = c2;
-        sqp->merged_qual[j] = ((q2-33)>>1)+33; //divide score by 2
+        sqp->merged_qual[j] = gap_p33_qual(q2); //divide score by 2
         if(trim_overhang){
           end_gaps = true;
           for(k=i;k<len;k++){

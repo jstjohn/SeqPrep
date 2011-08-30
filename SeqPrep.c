@@ -32,6 +32,7 @@
 //#define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
 #define DEF_FORWARD_PRIMER ("AGATCGGAAGAGCGGTTCAG")
 #define DEF_REVERSE_PRIMER ("AGATCGGAAGAGCGTCGTGT")
+char maximum_quality = MAX_QUAL;
 void help ( char *prog_name ) {
   fprintf(stderr, "\n\nUsage:\n%s [Required Args] [Options]\n",prog_name );
   fprintf(stderr, "NOTE 1: The output is always gziped compressed.\n");
@@ -63,6 +64,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
   fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
   fprintf(stderr, "Optional Arguments for Merging:\n" );
+  fprintf(stderr, "\t-y <maximum quality score in output ((phred 33) default = '%c' )>\n", maximum_quality );
   fprintf(stderr, "\t-g <print overhang when adapters are present and stripped (use this if reads are different length)>\n");
   fprintf(stderr, "\t-s <perform merging and output the merged reads to this file>\n" );
   fprintf(stderr, "\t-E <write pretty alignments to this file for visual Examination>\n" );
@@ -162,7 +164,7 @@ int main( int argc, char* argv[] ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -247,6 +249,9 @@ int main( int argc, char* argv[] ) {
       break;
 
       //OPTIONAL MERGING ARGUMENTS
+    case 'y' :
+      maximum_quality = optarg[0];
+      break;
     case 'g' :
       print_overhang = true;
       break;
