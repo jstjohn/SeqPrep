@@ -135,4 +135,4 @@ different, although I believe my method takes advantage of a more realistic adap
 10bp of adapter to be present at the end of a read to trim it off (by default) there is a backup adapter trimming function that trimms based on strong and
 unambiguous read overlap. Because of this my program can trim the adapter even if it is only present in the last few bases of the read.
 
-
+Also note that fastq-mcf appears to do a little better at sensitivity (0.992 vs 0.985) at a very large cost to specificity (0.497 vs 0.994).
