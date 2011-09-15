@@ -128,4 +128,11 @@ http://hgwdev.cse.ucsc.edu/~jstjohn/seqprep/
 
 where the pages are named `result(date).html`. The latest ones (as of when I have gotten around to edit this) can be found here:
 
-http://hgwdev.cse.ucsc.edu/~jstjohn/seqprep/results2011-07-07.html
+http://hgwdev.cse.ucsc.edu/~jstjohn/seqprep/results2011-09-15.html
+
+Note that although my program is more sensitive and specific than fastq-clipper, I optomized my default parameters based on this test. Results on real data may be
+different, although I believe my method takes advantage of a more realistic adapter model than other software does. For example, even though my program requires
+10bp of adapter to be present at the end of a read to trim it off (by default) there is a backup adapter trimming function that trimms based on strong and
+unambiguous read overlap. Because of this my program can trim the adapter even if it is only present in the last few bases of the read.
+
+
