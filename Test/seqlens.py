@@ -19,5 +19,5 @@ for line in stdin:
 		
 	
 
-for (length,count) in sorted(seqlens.iteritems(), key=itemgetter(1),reverse=True):
+for (length,count) in sorted(seqlens.iteritems(), key=itemgetter(0),reverse=True):
 	print("%d\t%d"%(length,count))
