@@ -14,22 +14,29 @@ See `Test/README.md` for some information on testing out other parameters. `Test
 
 
 Usage:
+    
     ./SeqPrep [Required Args] [Options]
     NOTE 1: The output is always gziped compressed.
     NOTE 2: If the quality strings in the output contain characters less than ascii 33 on an ascii table (they look like lines from a binary file), try running again with or without the -6 option.
+
 Required Arguments:
+
 	-f <first read input fastq filename>
 	-r <second read input fastq filename>
 	-1 <first read output fastq filename>
 	-2 <second read output fastq filename>
+
 General Arguments (Optional):
+
 	-3 <first read discarded fastq filename>
 	-4 <second read discarded fastq filename>
 	-h Display this help message and exit (also works with no args) 
 	-6 Input sequence is in phred+64 rather than phred+33 format, the output will still be phred+33 
 	-q <Quality score cutoff for mismatches to be counted in overlap; default = 13>
 	-L <Minimum length of a trimmed or merged read to print it; default = 30>
+
 Arguments for Adapter/Primer Trimming (Optional):
+
 	-A <forward read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)
 		 (should validate by grepping a file); default (genomic non-multiplexed adapter1) = AGATCGGAAGAGCGGTTCAG>
 	-B <reverse read primer/adapter sequence to trim as it would appear at the end of a read (recommend about 20bp of this)
@@ -47,7 +54,9 @@ Arguments for Adapter/Primer Trimming (Optional):
 	-p <read alignment gap-extension; default = 9>
 	-P <read alignment gap-end; default = 5>
 	-X <read alignment maximum fraction gap cutoff; default = 0.125000>
+
 Optional Arguments for Merging:
+
 	-y <maximum quality score in output ((phred 33) default = ']' )>
 	-g <print overhang when adapters are present and stripped (use this if reads are different length)>
 	-s <perform merging and output the merged reads to this file>
