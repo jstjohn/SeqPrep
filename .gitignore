@@ -2,4 +2,6 @@
 .project
 *.o
 SeqPrep
+*.txt
+*.fq
 

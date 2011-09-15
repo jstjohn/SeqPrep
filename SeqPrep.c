@@ -13,10 +13,10 @@
 #define DEF_OL2MERGE_ADAPTER (10)
 #define DEF_OL2MERGE_READS (15)
 #define DEF_QCUT (13)
-#define DEF_MIN_MATCH_ADAPTER (0.75)
-#define DEF_MIN_MATCH_READS (0.8)
+#define DEF_MIN_MATCH_ADAPTER (0.87)
+#define DEF_MIN_MATCH_READS (0.9)
 #define DEF_MIN_READ_LEN (30)
-#define DEF_MAX_MISMATCH_ADAPTER (0.08)
+#define DEF_MAX_MISMATCH_ADAPTER (0.02)
 #define DEF_MAX_MISMATCH_READS (0.02)
 #define DEF_MAX_PRETTY_PRINT (10000)
 #define DEF_ADAPTER_SCORE_THRES (26)
@@ -43,6 +43,8 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-1 <first read output fastq filename>\n" );
   fprintf(stderr, "\t-2 <second read output fastq filename>\n" );
   fprintf(stderr, "General Arguments (Optional):\n" );
+  fprintf(stderr, "\t-3 <first read discarded fastq filename>\n" );
+  fprintf(stderr, "\t-4 <second read discarded fastq filename>\n" );
   fprintf(stderr, "\t-h Display this help message and exit (also works with no args) \n" );
   fprintf(stderr, "\t-6 Input sequence is in phred+64 rather than phred+33 format, the output will still be phred+33 \n" );
   fprintf(stderr, "\t-q <Quality score cutoff for mismatches to be counted in overlap; default = %d>\n", DEF_QCUT );
@@ -127,9 +129,12 @@ int main( int argc, char* argv[] ) {
   char reverse_fn[MAX_FN_LEN];
   char forward_out_fn[MAX_FN_LEN];
   char reverse_out_fn[MAX_FN_LEN];
+  char forward_discard_fn[MAX_FN_LEN];
+  char reverse_discard_fn[MAX_FN_LEN];
   char merged_out_fn[MAX_FN_LEN];
   bool do_read_merging = false;
   bool print_overhang = false;
+  bool write_discard=false;
   char forward_primer[MAX_SEQ_LEN+1];
   strcpy(forward_primer, DEF_FORWARD_PRIMER); //set default
   char forward_primer_dummy_qual[MAX_SEQ_LEN+1];
@@ -159,12 +164,16 @@ int main( int argc, char* argv[] ) {
   bool pretty_print = false;
   char pretty_print_fn[MAX_FN_LEN+1];
   SQP sqp = SQP_init();
+  char untrim_fseq[MAX_SEQ_LEN+1];
+  char untrim_fqual[MAX_SEQ_LEN+1];
+  char untrim_rseq[MAX_SEQ_LEN+1];
+  char untrim_rqual[MAX_SEQ_LEN+1];
   /* No args - help!  */
   if ( argc == 1 ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:3:4:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -186,6 +195,14 @@ int main( int argc, char* argv[] ) {
       break;
 
       //OPTIONAL GENERAL ARGUMENTS
+    case '3' :
+      write_discard=true;
+      strcpy(forward_discard_fn, optarg);
+      break;
+    case '4' :
+      write_discard=true;
+      strcpy(reverse_discard_fn, optarg);
+      break;
     case 'h' :
       help(argv[0]);
       break;
@@ -314,11 +331,16 @@ int main( int argc, char* argv[] ) {
   gzFile rfqw = fileOpen(reverse_out_fn,"w");
   gzFile mfqw = NULL;
   gzFile ppaw = NULL;
+  gzFile dffqw = NULL;
+  gzFile drfqw = NULL;
   if(do_read_merging)
     mfqw = fileOpen(merged_out_fn,"w");
   if(pretty_print)
     ppaw = fileOpen(pretty_print_fn,"w");
-
+  if(write_discard){
+    dffqw = fileOpen(forward_discard_fn,"w");
+    drfqw = fileOpen(reverse_discard_fn,"w");    
+  }
 
 
   /**
@@ -329,6 +351,12 @@ int main( int argc, char* argv[] ) {
 
 
     AlnAln *faaln, *raaln, *fraln;
+
+    //save a copy of the original sequences/qualities first
+    strcpy(untrim_fseq,sqp->fseq);
+    strcpy(untrim_fqual,sqp->fqual);
+    strcpy(untrim_rseq,sqp->rseq);
+    strcpy(untrim_rqual,sqp->rqual);
 
     faaln = aln_stdaln_aux(sqp->fseq, forward_primer, &aln_param_nt2nt,
         ALN_TYPE_LOCAL, adapter_thresh , sqp->flen, forward_primer_len);
@@ -383,9 +411,12 @@ int main( int argc, char* argv[] ) {
         sqp->flen = min(sqp->flen,fpos);
       }
 
-
       if(sqp->flen < min_read_len || sqp->rlen < min_read_len){
         num_discarded++;
+	if(write_discard){
+	  write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	  write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	}
         goto CLEAN_ADAPTERS;
       }else{ //trim the adapters
         sqp->fseq[sqp->flen] = '\0';
@@ -431,6 +462,10 @@ int main( int argc, char* argv[] ) {
         }
         else{
           num_discarded++;
+	  if(write_discard){
+	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	  }
         }
       }else if(fraln->score > read_thresh){
         // we know that the adapters are present, trimmed, and the resulting
@@ -465,11 +500,21 @@ int main( int argc, char* argv[] ) {
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
+	  if(write_discard){
+	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	  }
         }
 
 
       }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
         num_discarded++;
+	if(write_discard){
+	  //write_fastq(dffqw, sqp->fid, sqp->fseq, sqp->fqual);
+	  //write_fastq(drfqw, sqp->rid, sqp->rseq, sqp->rqual);
+	  write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	  write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	}
       }
     }else{
       //no adapters present
@@ -487,6 +532,10 @@ int main( int argc, char* argv[] ) {
             }
           }else{
             num_discarded++;
+	    if(write_discard){
+	      write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	      write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	    }
           }
         }else{
           //no significant overlap so just write them
@@ -498,6 +547,10 @@ int main( int argc, char* argv[] ) {
             write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
           }else{
             num_discarded++;
+	    if(write_discard){
+	      write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	      write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	    }
           }
 
         }
@@ -512,6 +565,10 @@ int main( int argc, char* argv[] ) {
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
+	  if(write_discard){
+	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+	  }
         }
         goto CLEAN_ADAPTERS;
       }
@@ -552,5 +609,9 @@ int main( int argc, char* argv[] ) {
     gzclose(mfqw);
   if(ppaw != NULL)
     gzclose(ppaw);
+  if(dffqw != NULL)
+    gzclose(dffqw);
+  if(drfqw != NULL)
+    gzclose(drfqw);
   return 0;
 }
