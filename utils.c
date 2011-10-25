@@ -800,7 +800,8 @@ inline int write_fastq(gzFile out, char id[], char seq[], char qual[]){
 inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
     goto bad_read;
-  }else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
+  //}else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
+  }else{
     return true;
   }
 
@@ -825,8 +826,9 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
 
   /* get identifier */
   i = 0;
-  while( (!isspace(c=gzgetc( fastq ) ) &&
-      (i < MAX_ID_LEN) ) ) {
+  c = gzgetc( fastq );
+  while(  c != '\n' &&
+      (i < MAX_ID_LEN)) {
     if ( c == EOF ) {
       return 0;
     }
@@ -836,15 +838,16 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
       /* Id is too long - truncate it now */
       id[i] = '\0';
     }
+    c = gzgetc( fastq );
   }
   id[i] = '\0';
   *id_len = i;
   /* Now, everything else on the line is description (if anything)
      although fastq does not appear to formally support description */
-  while ( (c != '\n') &&
-      (c != EOF) ) {
-    c = gzgetc( fastq );
-  }
+//  while ( (c != '\n') &&
+//      (c != EOF) ) {
+//    c = gzgetc( fastq );
+//  }
 
   /* Now, read the sequence. This should all be on a single line */
   i = 0;
@@ -1018,9 +1021,9 @@ bool k_match( const char* s1, const char* q1, size_t len1,
   size_t match = 0;
   for( i = 0; ((i < len1) && (i <len2)); i++ ) {
     //if we have a match, or at least good quality bases...
-    if ( s1[i] == s2[i] || ((q1[i] >= adj_q_cut) &&
+    if ( (s1[i] == s2[i] && s1[i] != 'N') || ((q1[i] >= adj_q_cut) &&
         (q2[i] >= adj_q_cut))){
-      if (s1[i] != s2[i]) {
+      if (s1[i] != s2[i] || s1[i] == 'N') {
         mismatch++;
         if(mismatch > max_mismatch)
           return false;
