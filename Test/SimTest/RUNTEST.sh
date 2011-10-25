@@ -4,14 +4,15 @@
 
 #6 * 3 * 5 * 4
 Z=( 26 )
-M=( 0.08 )
-N=( 0.80 )
-X=( 0.5 0.25 0.3 0.125 )
+M=( 0.02 )
+N=( 0.87 )
+X=( 0.125 )
 M2=( 0.02 )
-N2=( 0.95 )
-Q=( 5 )
+N2=( 0.9 )
+Q=( 13)
 
 rm trimmed_*
+rm lendist_*
 
 for z in "${Z[@]}"
 do
@@ -36,12 +37,15 @@ do
 			-M ${m} \
 			-N ${n} \
 			-X ${x} \
-			-q ${q}
+			-q ${q} \
+			-n ${n2} \
+			-m ${m2}
 		    rm simSeq_trimmed_1.fq
 		    rm simSeq_trimmed_2.fq
 		    gunzip simSeq_trimmed_1.fq.gz
 		    gunzip simSeq_trimmed_2.fq.gz
 		    python ./simseq_trimmed_error_check.py simSeq10k_1.fq simSeq10k_2.fq simSeq_trimmed_1.fq simSeq_trimmed_2.fq > trimmed_M${m}_N${n}_X${x}_Z${z}_Q${q}_m${m2}_n${n2}.txt
+		    python ../seqlens.py < simSeq_trimmed_1.fq > lendist_M${m}_N${n}_X${x}_Z${z}_Q${q}_m${m2}_n${n2}.txt	
 			done
 		    done
 		done
