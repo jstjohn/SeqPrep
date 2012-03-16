@@ -9,8 +9,8 @@ EXECUTABLE=SeqPrep
 
 all: $(SOURCES) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC) ${COPTS} $(LDFLAGS) $(OBJECTS) -o $@
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) ${COPTS} $(OBJECTS) $(LDFLAGS) -o $@
 
 install: all
 	-cp $(EXECUTABLE) $(HOME)/bin
