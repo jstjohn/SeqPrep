@@ -800,7 +800,7 @@ inline int write_fastq(gzFile out, char id[], char seq[], char qual[]){
 inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
     goto bad_read;
-  //}else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
+    //}else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
   }else{
     return true;
   }
@@ -844,10 +844,10 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
   *id_len = i;
   /* Now, everything else on the line is description (if anything)
      although fastq does not appear to formally support description */
-//  while ( (c != '\n') &&
-//      (c != EOF) ) {
-//    c = gzgetc( fastq );
-//  }
+  //  while ( (c != '\n') &&
+  //      (c != EOF) ) {
+  //    c = gzgetc( fastq );
+  //  }
 
   /* Now, read the sequence. This should all be on a single line */
   i = 0;
@@ -967,7 +967,7 @@ int compute_ol(
      on the forward sequence */
   int best_hit = CODE_NOMATCH;
   int subject_len = subjectLen;
-  for( pos = 0; pos < subjectLen - min_olap; pos++ ) {
+  for( pos = 0; pos < subjectLen - min_olap + 1; pos++ ) {
     subject_len = subjectLen - pos;
     //Round1:
     //   ------     Subj

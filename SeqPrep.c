@@ -413,10 +413,10 @@ int main( int argc, char* argv[] ) {
 
       if(sqp->flen < min_read_len || sqp->rlen < min_read_len){
         num_discarded++;
-	if(write_discard){
-	  write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	  write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	}
+        if(write_discard){
+          write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+          write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+        }
         goto CLEAN_ADAPTERS;
       }else{ //trim the adapters
         sqp->fseq[sqp->flen] = '\0';
@@ -462,10 +462,10 @@ int main( int argc, char* argv[] ) {
         }
         else{
           num_discarded++;
-	  if(write_discard){
-	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	  }
+          if(write_discard){
+            write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+            write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+          }
         }
       }else if(fraln->score > read_thresh){
         // we know that the adapters are present, trimmed, and the resulting
@@ -500,21 +500,21 @@ int main( int argc, char* argv[] ) {
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
-	  if(write_discard){
-	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	  }
+          if(write_discard){
+            write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+            write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+          }
         }
 
 
       }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
         num_discarded++;
-	if(write_discard){
-	  //write_fastq(dffqw, sqp->fid, sqp->fseq, sqp->fqual);
-	  //write_fastq(drfqw, sqp->rid, sqp->rseq, sqp->rqual);
-	  write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	  write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	}
+        if(write_discard){
+          //write_fastq(dffqw, sqp->fid, sqp->fseq, sqp->fqual);
+          //write_fastq(drfqw, sqp->rid, sqp->rseq, sqp->rqual);
+          write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+          write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+        }
       }
     }else{
       //no adapters present
@@ -532,10 +532,10 @@ int main( int argc, char* argv[] ) {
             }
           }else{
             num_discarded++;
-	    if(write_discard){
-	      write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	      write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	    }
+            if(write_discard){
+              write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+              write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+            }
           }
         }else{
           //no significant overlap so just write them
@@ -547,10 +547,10 @@ int main( int argc, char* argv[] ) {
             write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
           }else{
             num_discarded++;
-	    if(write_discard){
-	      write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	      write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	    }
+            if(write_discard){
+              write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+              write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+            }
           }
 
         }
@@ -565,10 +565,10 @@ int main( int argc, char* argv[] ) {
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
-	  if(write_discard){
-	    write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
-	    write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
-	  }
+          if(write_discard){
+            write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
+            write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
+          }
         }
         goto CLEAN_ADAPTERS;
       }
