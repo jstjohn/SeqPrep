@@ -814,7 +814,7 @@ inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len
    Return 1 => more sequence to be had
           0 => EOF
  */
-int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len, bool p64 ) {
+int read_fastq( gzFile fastq, char id[], char seq[], char qual[], size_t *id_len, size_t *seq_len, bool p64 ) {
   char c;
   size_t i;
   c = gzgetc( fastq );
@@ -925,13 +925,13 @@ int read_fastq( gzFile* fastq, char id[], char seq[], char qual[], size_t *id_le
 
 
 /** fileOpen **/
-gzFile * fileOpen(const char *name, char access_mode[]) {
-  gzFile * f;
+gzFile fileOpen(const char *name, char access_mode[]) {
+  gzFile f;
   f = gzopen(name, access_mode);
-  if (f == NULL) {
+  if (f == Z_NULL) {
     fprintf( stderr, "%s\n", name);
     perror("Cannot open file");
-    return NULL;
+    return Z_NULL;
   }
   return f;
 }

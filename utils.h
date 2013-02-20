@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <zlib.h>
+#include <unistd.h>
 #include "stdaln.h"
 
 #define MAX_ID_LEN (256)
@@ -59,9 +60,9 @@ bool read_merge(SQP sqp, size_t min_olap,
 inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 );
 inline int write_fastq(gzFile out, char id[], char seq[], char qual[]);
 inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len );
-int read_fastq( gzFile* fastq, char id[], char seq[], char qual[],
+int read_fastq( gzFile fastq, char id[], char seq[], char qual[],
     size_t *id_len, size_t *seq_len, bool p64 );
-gzFile * fileOpen(const char *name, char access_mode[]);
+gzFile fileOpen(const char *name, char access_mode[]);
 int compute_ol(
     char subjectSeq[], char subjectQual[], size_t subjectLen,
     char querySeq[], char queryQual[], size_t queryLen,
