@@ -19,9 +19,9 @@ SQP SQP_init(){
  */
 inline char mismatch_p33_merge(char pA, char pB){
   if(pA > pB){
-    return min(pA-(pB-33),maximum_quality);
+    return max( min(pA-(pB-33),maximum_quality), MIN_QUAL);
   }else{
-    return min(pB-(pA-33),maximum_quality);
+    return max( min(pB-(pA-33),maximum_quality), MIN_QUAL);
   }
 }
 
@@ -47,6 +47,8 @@ bool isXDNA(char c){
  * Calculates the resulting phred 33 score given a match
  */
 inline char match_p33_merge(char pA, char pB){
+  pA = min(pA, maximum_quality);
+  pB = min(pB, maximum_quality);
   char res = pA+(pB-33);
   return min(res,maximum_quality);
 }

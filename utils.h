@@ -13,6 +13,7 @@
 #define MAX_SEQ_LEN (256)
 //60+33 = 93 = '[' (was 83='S')
 #define MAX_QUAL (93)
+#define MIN_QUAL (33)
 extern char maximum_quality;
 #define CODE_AMBIGUOUS (-2)
 #define CODE_NOMATCH (-1)
