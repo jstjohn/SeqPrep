@@ -50,11 +50,11 @@ inline char match_p33_merge(char pA, char pB){
   pA = min(pA, maximum_quality);
   pB = min(pB, maximum_quality);
   char res = pA+(pB-33);
-  return min(res,maximum_quality);
+  return max(min(res,maximum_quality), MIN_QUAL);
 }
 
 inline char gap_p33_qual(char q){
-  return min(((q-33)>>1)+33,maximum_quality);
+  return max(min(((q-33)>>1)+33,maximum_quality), MIN_QUAL);
 }
 
 
