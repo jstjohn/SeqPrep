@@ -1,4 +1,3 @@
-CC=gcc
 CFLAGS=-c -Wall -O0 -g
 #recommended options: -ffast-math -ftree-vectorize -march=core2 -mssse3 -O3
 COPTS=
@@ -19,7 +18,7 @@ install: all
 	$(CC) ${COPTS} $(CFLAGS) $< -o $@
 
 clean:
-	-rm $(OBJECTS) $(EXECUTABLE)
+	-rm -f $(OBJECTS) $(EXECUTABLE)
 
 check-syntax:
 	$(CC) ${CFLAGS} -o .nul -S ${CHK_SOURCES}

@@ -45,8 +45,9 @@ void adapter_merge(SQP sqp, bool print_overhang);
 void fill_merged_sequence(SQP sqp, AlnAln *aln, bool include_overhang);
 void pretty_print_alignment(gzFile out, SQP sqp, char adj_q_cut, bool sort);
 void pretty_print_alignment_stdaln(gzFile out, SQP sqp, AlnAln *aln, bool first_adapter, bool second_adapter, bool print_merged);
-inline char mismatch_p33_merge(char pA, char pB);
-inline char match_p33_merge(char pA, char pB);
+extern char mismatch_p33_merge(char pA, char pB);
+extern char gap_p33_qual(char q);
+extern char match_p33_merge(char pA, char pB);
 void make_blunt_ends(SQP sqp, AlnAln *aln);
 bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
     unsigned short min_match_adapter[MAX_SEQ_LEN+1],
@@ -58,9 +59,9 @@ bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
     unsigned short max_mismatch[MAX_SEQ_LEN+1],
     char adj_q_cut);
-inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 );
-inline int write_fastq(gzFile out, char id[], char seq[], char qual[]);
-inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len );
+extern bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 );
+extern int write_fastq(gzFile out, char id[], char seq[], char qual[]);
+extern bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len );
 int read_fastq( gzFile fastq, char id[], char seq[], char qual[],
     size_t *id_len, size_t *seq_len, bool p64 );
 gzFile fileOpen(const char *name, char access_mode[]);
@@ -76,8 +77,8 @@ bool k_match( const char* s1, const char* q1, size_t len1,
     unsigned short min_match,
     unsigned short max_mismatch, char adj_q_cut);
 void revcom_seq( char seq[], int len);
-inline char revcom_char(const char base);
-inline void rev_qual( char q[], int len );
+extern char revcom_char(const char base);
+extern void rev_qual( char q[], int len );
 bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     char *forward_primer, char *forward_primer_dummy_qual,
     int forward_primer_len,
