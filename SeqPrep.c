@@ -112,7 +112,6 @@ extern inline void update_spinner(unsigned long long num_reads){
 
 
 int main( int argc, char* argv[] ) {
-  fprintf(stdout, " in main"); //TESTING
   unsigned long long num_pairs;
   unsigned long long num_merged;
   unsigned long long num_adapter;
@@ -145,7 +144,6 @@ int main( int argc, char* argv[] ) {
   strcpy(reverse_primer, DEF_REVERSE_PRIMER); //set default
   char reverse_primer_dummy_qual[MAX_SEQ_LEN+1];
   int i;
-  fprintf(stdout, " in main"); //TESTING
   for(i=0;i<MAX_SEQ_LEN+1;i++){
     forward_primer_dummy_qual[i] = 'N';//phred score of 45
     reverse_primer_dummy_qual[i] = 'N';
@@ -269,7 +267,6 @@ int main( int argc, char* argv[] ) {
       read_frac_thresh = atof(optarg);
       break;
     case 'z':
-      fprintf(stdout, "FOUND CASE"); //TESTING
       use_mask = true;
       break;
 
@@ -350,15 +347,12 @@ int main( int argc, char* argv[] ) {
     drfqw = fileOpen(reverse_discard_fn,"w");    
   }
 
-  int test_ct = 0; // TEST
 
   /**
    * Loop over all of the reads
    */
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
-    //update_spinner(num_pairs++);  // TESTING
-    fprintf(stdout,"test...");
-
+    update_spinner(num_pairs++);  
 
     AlnAln *faaln, *raaln, *fraln;
 
@@ -376,9 +370,6 @@ int main( int argc, char* argv[] ) {
         ALN_TYPE_LOCAL, adapter_thresh , sqp->flen, forward_primer_len);
     raaln = aln_stdaln_aux(sqp->rseq, reverse_primer, &aln_param_nt2nt,
         ALN_TYPE_LOCAL, adapter_thresh, sqp->rlen, reverse_primer_len);
-    if(test_ct == 24){
-        fprintf(stdout,"hitit");  // TESTING line 380
-    }
 
     //check for direct adapter match.
     if(adapter_trim(sqp, min_ol_adapter,
@@ -430,7 +421,6 @@ int main( int argc, char* argv[] ) {
 
       if(sqp->flen < min_read_len || sqp->rlen < min_read_len){
         num_discarded++;
-        fprintf(stdout,"Discarded1");
         if(write_discard){
           write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
           write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
@@ -440,7 +430,6 @@ int main( int argc, char* argv[] ) {
         if(use_mask){  // Use base mask - do not trim
           int mask_iter;
           int sz_sqp = sizeof(sqp->fseq);
-          fprintf(stdout, "\nTESTING sz_sqp %d\n",sz_sqp);  // TESTING
           if (sqp->flen < untrim_flen){
             for(mask_iter = sqp->flen ; mask_iter < sz_sqp && (sqp->fseq[mask_iter] != '\0'); mask_iter++){
               sqp->fseq[mask_iter]='N';
@@ -468,11 +457,6 @@ int main( int argc, char* argv[] ) {
         revcom_seq(sqp->rc_rseq, sqp->rlen);
       }
 
-      test_ct++;
-      if(test_ct == 25){
-           fprintf(stdout,"hitit"); // line 473
-      }
-      fprintf(stdout,"\nNUMBER %d",test_ct);
       //do a nice global alignment between two reads, and print consensus
       if(use_mask){
               // remove N's for alignment
@@ -485,7 +469,8 @@ int main( int argc, char* argv[] ) {
               int rcNct=0;
               int k=0;
               int j=0;
-              for(int i=0;i<tmp_len;i++){
+              int i;
+              for(i=0;i<tmp_len;i++){
                     if(i<tmp_flen && (sqp->fseq[i] != 'N')){
                           fseq[k++]=sqp->fseq[i];
                     }
@@ -531,12 +516,10 @@ int main( int argc, char* argv[] ) {
         }
         if(strlen(sqp->merged_seq) >= min_read_len && strlen(sqp->merged_qual) >= min_read_len){
           num_merged++;
-          fprintf(stdout,"Merge print");
           write_fastq(mfqw,sqp->fid,sqp->merged_seq,sqp->merged_qual);
         }
         else{
           num_discarded++;
-          fprintf(stdout,"Discarded2");
           if(write_discard){
             write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
             write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
@@ -570,12 +553,10 @@ int main( int argc, char* argv[] ) {
             strlen(sqp->fqual) >= min_read_len &&
             strlen(sqp->rseq) >= min_read_len &&
             strlen(sqp->rqual) >= min_read_len){
-          fprintf(stdout, "Blunt end print");
           write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
-          fprintf(stdout,"Discarded3");
           if(write_discard){
             write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
             write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
@@ -585,7 +566,6 @@ int main( int argc, char* argv[] ) {
 
       }else{ //there was a bad looking read-read alignment, so lets not risk it and junk it
         num_discarded++;
-        fprintf(stdout,"Discarded4");
         if(write_discard){
           //write_fastq(dffqw, sqp->fid, sqp->fseq, sqp->fqual);
           //write_fastq(drfqw, sqp->rid, sqp->rseq, sqp->rqual);
@@ -609,7 +589,6 @@ int main( int argc, char* argv[] ) {
             }
           }else{
             num_discarded++;
-            fprintf(stdout,"Discarded5");
             if(write_discard){
               write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
               write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
@@ -621,12 +600,10 @@ int main( int argc, char* argv[] ) {
               strlen(sqp->fqual) >= min_read_len &&
               strlen(sqp->rseq) >= min_read_len &&
               strlen(sqp->rqual) >= min_read_len){
-            fprintf(stdout,"No overlap print");
             write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
             write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
           }else{
             num_discarded++;
-            fprintf(stdout,"Discarded6");
             if(write_discard){
               write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
               write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
@@ -641,12 +618,10 @@ int main( int argc, char* argv[] ) {
             strlen(sqp->fqual) >= min_read_len &&
             strlen(sqp->rseq) >= min_read_len &&
             strlen(sqp->rqual) >= min_read_len){
-          fprintf(stdout, "Just writing the reads print");
           write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{
           num_discarded++;
-          fprintf(stdout,"Discarded7");
           if(write_discard){
             write_fastq(dffqw, sqp->fid, untrim_fseq, untrim_fqual);
             write_fastq(drfqw, sqp->rid, untrim_rseq, untrim_rqual);
