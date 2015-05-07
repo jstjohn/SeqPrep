@@ -356,7 +356,8 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
     unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
     unsigned short min_match_reads[MAX_SEQ_LEN+1],
     unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
-    char qcut){
+    char qcut, 
+    bool use_mask){
   //adapters on reads if the insert size is less than the read length, the adapter
   // appears at the end of the sequence.
 
@@ -403,15 +404,38 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
   if(fpos != CODE_NOMATCH || rpos != CODE_NOMATCH){
     //check if reads are long enough to do anything with.
     // trim adapters
+    int sz_sqp;
+    int iter;
     if(fpos >=0){
-      sqp->fseq[fpos] = '\0';
-      sqp->fqual[fpos] = '\0';
+      
+      if(use_mask){
+         sz_sqp = sizeof(sqp->fseq);
+         for(iter=sqp->flen; iter<sz_sqp && (sqp->fseq[iter] != '\0'); iter++){
+            sqp->fseq[iter]='N';
+         }
+         sqp->rlen=iter;
+      }else{
+         sqp->fseq[fpos] = '\0';
+         sqp->fqual[fpos] = '\0';
+      }
       sqp->flen = fpos;
+      
     }
     if(rpos >= 0){
-      sqp->rseq[rpos] = '\0';
-      sqp->rqual[rpos] = '\0';
-      sqp->rlen = rpos;
+       
+       if(use_mask){
+         sz_sqp = sizeof(sqp->rseq);
+         for(iter=sqp->rlen; iter<sz_sqp && (sqp->rseq[iter] != '\0'); iter++){
+            sqp->rseq[iter]='N';
+         }
+         sqp->rlen=iter;
+       }else{
+         sqp->rseq[rpos] = '\0';
+         sqp->rqual[rpos] = '\0';
+       }
+       sqp->rlen = rpos;
+       
+       
     }
     // now re-reverse complement the sequences
     strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1);
