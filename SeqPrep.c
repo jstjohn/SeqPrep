@@ -65,6 +65,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-p <read alignment gap-extension; default = %d>\n", aln_param_rd2rd.gap_ext );
   fprintf(stderr, "\t-P <read alignment gap-end; default = %d>\n", aln_param_rd2rd.gap_end );
   fprintf(stderr, "\t-X <read alignment maximum fraction gap cutoff; default = %f>\n", DEF_READ_GAP_FRAC_CUTOFF );
+  fprintf(stderr, "\t-z <use mask; N will replace adapters>\n");
   fprintf(stderr, "Optional Arguments for Merging:\n" );
   fprintf(stderr, "\t-y <maximum quality score in output ((phred 33) default = '%c' )>\n", maximum_quality );
   fprintf(stderr, "\t-g <print overhang when adapters are present and stripped (use this if reads are different length)>\n");
@@ -135,6 +136,7 @@ int main( int argc, char* argv[] ) {
   bool do_read_merging = false;
   bool print_overhang = false;
   bool write_discard=false;
+  bool use_mask=false;
   char forward_primer[MAX_SEQ_LEN+1];
   strcpy(forward_primer, DEF_FORWARD_PRIMER); //set default
   char forward_primer_dummy_qual[MAX_SEQ_LEN+1];
@@ -173,7 +175,7 @@ int main( int argc, char* argv[] ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:3:4:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6gh" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:3:4:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6ghz" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -264,6 +266,9 @@ int main( int argc, char* argv[] ) {
     case 'X':
       read_frac_thresh = atof(optarg);
       break;
+    case 'z':
+      use_mask = true;
+      break;
 
       //OPTIONAL MERGING ARGUMENTS
     case 'y' :
@@ -347,8 +352,7 @@ int main( int argc, char* argv[] ) {
    * Loop over all of the reads
    */
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
-    update_spinner(num_pairs++);
-
+    update_spinner(num_pairs++);  
 
     AlnAln *faaln, *raaln, *fraln;
 
@@ -357,6 +361,10 @@ int main( int argc, char* argv[] ) {
     strcpy(untrim_fqual,sqp->fqual);
     strcpy(untrim_rseq,sqp->rseq);
     strcpy(untrim_rqual,sqp->rqual);
+
+    //save original length
+    int untrim_flen=sqp->flen;
+    int untrim_rlen=sqp->rlen;
 
     faaln = aln_stdaln_aux(sqp->fseq, forward_primer, &aln_param_nt2nt,
         ALN_TYPE_LOCAL, adapter_thresh , sqp->flen, forward_primer_len);
@@ -373,7 +381,7 @@ int main( int argc, char* argv[] ) {
         max_mismatch_adapter,
         min_match_reads,
         max_mismatch_reads,
-        qcut) ||
+        qcut, use_mask) ||
         faaln->score >= adapter_thresh ||
         raaln->score >= adapter_thresh){
       num_adapter++; //adapter present
@@ -419,20 +427,70 @@ int main( int argc, char* argv[] ) {
         }
         goto CLEAN_ADAPTERS;
       }else{ //trim the adapters
-        sqp->fseq[sqp->flen] = '\0';
-        sqp->fqual[sqp->flen] = '\0';
-        sqp->rseq[sqp->rlen] = '\0';
-        sqp->rqual[sqp->rlen] = '\0';
+        if(use_mask){  // Use base mask - do not trim
+          int mask_iter;
+          int sz_sqp = sizeof(sqp->fseq);
+          if (sqp->flen < untrim_flen){
+            for(mask_iter = sqp->flen ; mask_iter < sz_sqp && (sqp->fseq[mask_iter] != '\0'); mask_iter++){
+              sqp->fseq[mask_iter]='N';
+            }
+            sqp->flen=mask_iter;
+          }
+          if (sqp->rlen < untrim_rlen){
+            sz_sqp = sizeof(sqp->rseq);
+            for(mask_iter = sqp->rlen ; mask_iter < sz_sqp && (sqp->rseq[mask_iter] != '\0'); mask_iter++){
+              sqp->rseq[mask_iter]='N';
+            }
+            sqp->rlen=mask_iter;
+          }
+          
+        }
+        else{
+          sqp->fseq[sqp->flen] = '\0';
+          sqp->fqual[sqp->flen] = '\0';
+          sqp->rseq[sqp->rlen] = '\0';
+          sqp->rqual[sqp->rlen] = '\0';
+        }
         strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1); //move regular reads now trimmed into RC read's place
         strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
         rev_qual(sqp->rc_rqual, sqp->rlen);        //amd re-reverse the RC reads
         revcom_seq(sqp->rc_rseq, sqp->rlen);
       }
 
-
       //do a nice global alignment between two reads, and print consensus
-      fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
-          ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
+      if(use_mask){
+              // remove N's for alignment
+              int tmp_flen=sizeof(sqp->fseq);
+              int tmp_rclen=sizeof(sqp->rc_rseq);
+              int tmp_len=max(tmp_flen, tmp_rclen);
+              char fseq[tmp_flen];
+              char rcseq[tmp_rclen];
+              int fNct=0;
+              int rcNct=0;
+              int k=0;
+              int j=0;
+              int i;
+              for(i=0;i<tmp_len;i++){
+                    if(i<tmp_flen && (sqp->fseq[i] != 'N')){
+                          fseq[k++]=sqp->fseq[i];
+                    }
+                    else{
+                          fNct++;
+                    }
+                    if(i<tmp_rclen && (sqp->rc_rseq[i] != 'N')){
+                          rcseq[j++]=sqp->rc_rseq[i];
+                    }
+                    else{
+                          rcNct++;
+                    }
+              }
+	      fraln = aln_stdaln_aux(fseq, rcseq, &aln_param_rd2rd,
+		  ALN_TYPE_GLOBAL, 1, tmp_flen-fNct, tmp_rclen - rcNct );
+
+      }else{
+	      fraln = aln_stdaln_aux(sqp->fseq, sqp->rc_rseq, &aln_param_rd2rd,
+		  ALN_TYPE_GLOBAL, 1, sqp->flen, sqp->rlen);
+      }
 
       //calculate the minimum score we are willing to accept to merge the reads
       //basically this is saying that 7/8 of the read must overlap perfectly
@@ -488,14 +546,13 @@ int main( int argc, char* argv[] ) {
         //          READ2: CTCTTCCGATCTATACAACTCGCTGACTTTGTCCTGGCATTTGACATATGCCTCGTAGTCTGCAAAGACTTTAAACCGGTCATGGTGGAACAGCATGTTG-
 
 
-
-        make_blunt_ends(sqp,fraln);
+	if(!use_mask)
+		make_blunt_ends(sqp,fraln);
 
         if(strlen(sqp->fseq) >= min_read_len &&
             strlen(sqp->fqual) >= min_read_len &&
             strlen(sqp->rseq) >= min_read_len &&
             strlen(sqp->rqual) >= min_read_len){
-
           write_fastq(ffqw, sqp->fid, sqp->fseq, sqp->fqual);
           write_fastq(rfqw, sqp->rid, sqp->rseq, sqp->rqual);
         }else{

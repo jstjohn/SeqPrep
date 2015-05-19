@@ -54,6 +54,7 @@ Arguments for Adapter/Primer Trimming (Optional):
 	-p <read alignment gap-extension; default = 9>
 	-P <read alignment gap-end; default = 5>
 	-X <read alignment maximum fraction gap cutoff; default = 0.125000>
+        -z <use mask; N will replace adapters>
 
 Optional Arguments for Merging:
 
