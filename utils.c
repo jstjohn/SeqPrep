@@ -413,12 +413,12 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
          for(iter=sqp->flen; iter<sz_sqp && (sqp->fseq[iter] != '\0'); iter++){
             sqp->fseq[iter]='N';
          }
-         sqp->rlen=iter;
+         sqp->flen=iter;
       }else{
          sqp->fseq[fpos] = '\0';
          sqp->fqual[fpos] = '\0';
+         sqp->flen = fpos;
       }
-      sqp->flen = fpos;
       
     }
     if(rpos >= 0){
@@ -432,8 +432,8 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
        }else{
          sqp->rseq[rpos] = '\0';
          sqp->rqual[rpos] = '\0';
+         sqp->rlen = rpos;
        }
-       sqp->rlen = rpos;
        
        
     }
@@ -449,7 +449,7 @@ bool adapter_trim(SQP sqp, size_t min_ol_adapter,
   return read_olap_adapter_trim(sqp, min_ol_adapter,
       min_match_adapter, max_mismatch_adapter,
       min_match_reads, max_mismatch_reads,
-      qcut);
+      qcut, use_mask);
 }
 
 
@@ -463,7 +463,7 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
     unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
     unsigned short min_match_reads[MAX_SEQ_LEN+1],
     unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
-    char qcut){
+    char qcut, bool use_mask){
   ////////////
   // Look at the adapter overhang
   // Starting from our minimum adapter overlap
@@ -497,6 +497,8 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
       //no adapter
       return false;
     }else{
+      int sz_sqp;
+      int iter;
       //ppos gives us the shift to the left of the query
       // One case:
       //   ----X------- fread
@@ -522,8 +524,21 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
         //   ----         fread
         // -X----X---     rread
         // make initial cut to rc read
-        sqp->rc_rqual[ppos + sqp->flen] = '\0';
-        sqp->rc_rseq[ppos + sqp->flen] = '\0';
+        if(use_mask){
+           sz_sqp = sizeof(sqp->fseq);
+           for(iter= sqp->flen + ppos; iter<sz_sqp && (sqp->fseq[iter] != '\0'); iter++){
+              sqp->fseq[iter]='N';
+           }
+           sqp->flen=iter;
+           sz_sqp = sizeof(sqp->rseq);
+           for(iter=sqp->rlen + ppos; iter<sz_sqp && (sqp->rseq[iter] != '\0'); iter++){
+              sqp->rseq[iter]='N';
+           }
+           sqp->rlen=iter;
+        }else{
+          sqp->rc_rqual[ppos + sqp->flen] = '\0';
+          sqp->rc_rseq[ppos + sqp->flen] = '\0';
+	}
         strncpy(sqp->rseq,sqp->rc_rseq,ppos + sqp->flen+1); //move RC reads into reg place and reverse them
         strncpy(sqp->rqual,sqp->rc_rqual,ppos + sqp->flen+1);
         rev_qual(sqp->rqual, ppos + sqp->flen);
@@ -535,10 +550,23 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
       }
 
       //now cases have been handled and length has been determined
-      sqp->fseq[sqp->flen] = '\0';
-      sqp->fqual[sqp->flen] = '\0';
-      sqp->rseq[sqp->rlen] = '\0';
-      sqp->rqual[sqp->rlen] = '\0';
+      if(use_mask){
+         sz_sqp = sizeof(sqp->fseq);
+         for(iter=sqp->flen; iter<sz_sqp && (sqp->fseq[iter] != '\0'); iter++){
+            sqp->fseq[iter]='N';
+         }
+         sqp->flen=iter;
+         sz_sqp = sizeof(sqp->rseq);
+         for(iter=sqp->rlen; iter<sz_sqp && (sqp->rseq[iter] != '\0'); iter++){
+            sqp->rseq[iter]='N';
+         }
+         sqp->rlen=iter;
+      }else{
+        sqp->fseq[sqp->flen] = '\0';
+        sqp->fqual[sqp->flen] = '\0';
+        sqp->rseq[sqp->rlen] = '\0';
+        sqp->rqual[sqp->rlen] = '\0';
+      }
       // now re-reverse complement the sequences
       strncpy(sqp->rc_rseq,sqp->rseq,sqp->rlen+1);
       strncpy(sqp->rc_rqual,sqp->rqual,sqp->rlen+1);
