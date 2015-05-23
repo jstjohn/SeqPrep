@@ -54,7 +54,8 @@ bool read_olap_adapter_trim(SQP sqp, size_t min_ol_adapter,
     unsigned short max_mismatch_adapter[MAX_SEQ_LEN+1],
     unsigned short min_match_reads[MAX_SEQ_LEN+1],
     unsigned short max_mismatch_reads[MAX_SEQ_LEN+1],
-    char qcut);
+    char qcut,
+    bool use_mask);
 bool read_merge(SQP sqp, size_t min_olap,
     unsigned short min_match[MAX_SEQ_LEN+1],
     unsigned short max_mismatch[MAX_SEQ_LEN+1],
