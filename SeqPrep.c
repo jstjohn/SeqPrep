@@ -79,33 +79,19 @@ void help ( char *prog_name ) {
   exit( 1 );
 }
 
-static unsigned short spcount = 0;
 /**
  * Have a nice spinner to give you a false sense of hope
  */
-extern inline void update_spinner(unsigned long long num_reads){
+static inline void update_spinner(unsigned long long num_reads){
+  static unsigned short spcount = 0;
+
   if(num_reads == 0){
     fprintf(stderr,"Processing reads... |");
     fflush(stderr);
   }else if (num_reads % SPIN_INTERVAL == 0){
-    switch(spcount % 4){
-    case 0:
-      fprintf(stderr,"\b/");
-      fflush(stderr);
-      break;
-    case 1:
-      fprintf(stderr,"\b-");
-      fflush(stderr);
-      break;
-    case 2:
-      fprintf(stderr,"\b\\");
-      fflush(stderr);
-      break;
-    default:
-      fprintf(stderr,"\b|");
-      fflush(stderr);
-      break;
-    }
+    putc('\b',stderr);
+    putc("/-\\|"[spcount % 4],stderr);
+    fflush(stderr);
     spcount++;
   }
 }
