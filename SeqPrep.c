@@ -83,7 +83,8 @@ static unsigned short spcount = 0;
 /**
  * Have a nice spinner to give you a false sense of hope
  */
-extern inline void update_spinner(unsigned long long num_reads){
+static void update_spinner(unsigned long long num_reads){
+
   if(num_reads == 0){
     fprintf(stderr,"Processing reads... |");
     fflush(stderr);

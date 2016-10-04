@@ -17,7 +17,7 @@ SQP SQP_init(){
 /**
  * Calculates the resulting phred 33 score given a mismatch
  */
-inline char mismatch_p33_merge(char pA, char pB){
+char mismatch_p33_merge(char pA, char pB){
   if(pA > pB){
     return max( min(pA-(pB-33),maximum_quality), MIN_QUAL);
   }else{
@@ -46,14 +46,14 @@ bool isXDNA(char c){
 /**
  * Calculates the resulting phred 33 score given a match
  */
-inline char match_p33_merge(char pA, char pB){
+char match_p33_merge(char pA, char pB){
   pA = min(pA, maximum_quality);
   pB = min(pB, maximum_quality);
   char res = pA+(pB-33);
   return max(min(res,maximum_quality), MIN_QUAL);
 }
 
-inline char gap_p33_qual(char q){
+char gap_p33_qual(char q){
   return max(min(((q-33)>>1)+33,maximum_quality), MIN_QUAL);
 }
 
@@ -798,7 +798,7 @@ void adapter_merge(SQP sqp, bool print_overhang){
    put the results in the next SQP of SQPDB. Grow
    this, if necessary.
  */
-inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
+bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   int frs; // forward fastq read status
   int rrs; // reverse fastq read status
   size_t id1len = 0;
@@ -846,12 +846,12 @@ inline bool next_fastqs( gzFile ffq, gzFile rfq, SQP curr_sqp, bool p64 ) {
   }
 }
 
-inline int write_fastq(gzFile out, char id[], char seq[], char qual[]){
+int write_fastq(gzFile out, char id[], char seq[], char qual[]){
   return gzprintf(out,"@%s\n%s\n+\n%s\n", id, seq, qual);
 }
 
 
-inline bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
+bool f_r_id_check( char fid[], size_t fid_len, char rid[], size_t rid_len ) {
   if(fid_len != rid_len){
     goto bad_read;
     //}else if (strncmp( fid, rid, fid_len - 2) == 0 ) {
@@ -1110,7 +1110,7 @@ void revcom_seq( char seq[], int len) {
   }
 }
 
-inline char revcom_char(const char base) {
+char revcom_char(const char base) {
   static bool warned = false;
   switch (base) {
   case 'A':
@@ -1157,7 +1157,7 @@ inline char revcom_char(const char base) {
   }
 }
 
-inline void rev_qual( char q[], int len ) {
+void rev_qual( char q[], int len ) {
   //int len = strlen(q);
   char tmp_q;
   int  i;
