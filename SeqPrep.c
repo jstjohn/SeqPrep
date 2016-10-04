@@ -43,6 +43,7 @@ void help ( char *prog_name ) {
   fprintf(stderr, "\t-1 <first read output fastq filename>\n" );
   fprintf(stderr, "\t-2 <second read output fastq filename>\n" );
   fprintf(stderr, "General Arguments (Optional):\n" );
+  fprintf(stderr, "\t-S Display the spinner?\n" );
   fprintf(stderr, "\t-3 <first read discarded fastq filename>\n" );
   fprintf(stderr, "\t-4 <second read discarded fastq filename>\n" );
   fprintf(stderr, "\t-h Display this help message and exit (also works with no args) \n" );
@@ -150,6 +151,7 @@ int main( int argc, char* argv[] ) {
   unsigned short min_match_reads[MAX_SEQ_LEN+1];
   char qcut = (char)DEF_QCUT+33;
   bool pretty_print = false;
+  bool display_spinner = false;
   char pretty_print_fn[MAX_FN_LEN+1];
   SQP sqp = SQP_init();
   char untrim_fseq[MAX_SEQ_LEN+1];
@@ -161,7 +163,7 @@ int main( int argc, char* argv[] ) {
     help(argv[0]);
   }
   int req_args = 0;
-  while( (ich=getopt( argc, argv, "f:r:1:2:3:4:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:6ghz" )) != -1 ) {
+  while( (ich=getopt( argc, argv, "f:r:1:2:3:4:q:A:s:y:B:O:E:x:M:N:L:o:m:b:w:W:p:P:X:Q:t:e:Z:n:S6ghz" )) != -1 ) {
     switch( ich ) {
 
     //REQUIRED ARGUMENTS
@@ -183,6 +185,9 @@ int main( int argc, char* argv[] ) {
       break;
 
       //OPTIONAL GENERAL ARGUMENTS
+    case 'S':
+      display_spinner = true;
+      break;
     case '3' :
       write_discard=true;
       strcpy(forward_discard_fn, optarg);
@@ -338,7 +343,8 @@ int main( int argc, char* argv[] ) {
    * Loop over all of the reads
    */
   while(next_fastqs( ffq, rfq, sqp, p64 )){ //returns false when done
-    update_spinner(num_pairs++);  
+    if(display_spinner)
+      update_spinner(num_pairs++);  
 
     AlnAln *faaln, *raaln, *fraln;
 
